@@ -1,0 +1,2359 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LMNP Comptabilité</title>
+<style>
+  :root {
+    --primary: #2563eb; --primary-dark: #1d4ed8;
+    --success: #16a34a; --danger: #dc2626; --warning: #d97706;
+    --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0;
+    --text: #1e293b; --muted: #64748b; --sidebar-w: 220px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+
+  /* SIDEBAR */
+  #sidebar { width: var(--sidebar-w); background: #1e293b; color: #e2e8f0; display: flex; flex-direction: column; flex-shrink: 0; position: fixed; height: 100vh; overflow-y: auto; }
+  #sidebar h1 { padding: 20px 16px 8px; font-size: 1rem; font-weight: 700; color: #fff; border-bottom: 1px solid #334155; }
+  #sidebar .subtitle { padding: 4px 16px 16px; font-size: .75rem; color: #94a3b8; border-bottom: 1px solid #334155; }
+  #sidebar nav { padding: 12px 0; flex: 1; }
+  #sidebar nav a { display: flex; align-items: center; gap: 10px; padding: 9px 16px; color: #cbd5e1; text-decoration: none; font-size: .875rem; cursor: pointer; border-left: 3px solid transparent; transition: all .15s; }
+  #sidebar nav a:hover { background: #334155; color: #fff; }
+  #sidebar nav a.active { background: #1e40af; color: #fff; border-left-color: #60a5fa; }
+  #sidebar .nav-section { padding: 8px 16px 4px; font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #475569; }
+  #sidebar .year-select { padding: 12px 16px; border-top: 1px solid #334155; }
+  #sidebar .year-select label { font-size: .75rem; color: #94a3b8; display: block; margin-bottom: 4px; }
+  #sidebar .year-select select { width: 100%; background: #334155; border: 1px solid #475569; color: #fff; padding: 6px 8px; border-radius: 6px; font-size: .875rem; }
+
+  /* MAIN */
+  #main { margin-left: var(--sidebar-w); flex: 1; padding: 28px; max-width: 1140px; }
+  .page { display: none; } .page.active { display: block; }
+
+  /* HEADER */
+  .page-header { margin-bottom: 24px; }
+  .page-header h2 { font-size: 1.5rem; font-weight: 700; }
+  .page-header p { color: var(--muted); font-size: .875rem; margin-top: 2px; }
+
+  /* CARDS */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .card h3 { font-size: .95rem; font-weight: 600; margin-bottom: 14px; color: var(--text); }
+  .card + .card { margin-top: 16px; }
+
+  /* STATS */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; }
+  .stat-card .label { font-size: .72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  .stat-card .value { font-size: 1.5rem; font-weight: 700; margin-top: 4px; }
+  .stat-card .sub { font-size: .75rem; color: var(--muted); margin-top: 2px; }
+  .green { color: var(--success); } .red { color: var(--danger); } .blue { color: var(--primary); } .orange { color: var(--warning); }
+
+  /* GRIDS */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+  th { text-align: left; padding: 10px 12px; background: #f1f5f9; color: var(--muted); font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafbfc; }
+  tfoot td { font-weight: 700; background: #f8fafc; border-top: 2px solid var(--border); }
+
+  /* BADGES */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .7rem; font-weight: 600; }
+  .badge-blue { background: #dbeafe; color: #1d4ed8; } .badge-green { background: #dcfce7; color: #15803d; }
+  .badge-orange { background: #ffedd5; color: #c2410c; } .badge-red { background: #fee2e2; color: #b91c1c; }
+  .badge-gray { background: #f1f5f9; color: #475569; } .badge-purple { background: #ede9fe; color: #6d28d9; }
+
+  /* FORMS */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(195px, 1fr)); gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: .8rem; font-weight: 500; color: var(--muted); }
+  .form-group input, .form-group select, .form-group textarea { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: .875rem; color: var(--text); background: #fff; transition: border .15s; }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px #dbeafe; }
+  .form-group textarea { resize: vertical; min-height: 60px; }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; font-size: .875rem; font-weight: 500; cursor: pointer; border: none; transition: all .15s; }
+  .btn-primary { background: var(--primary); color: #fff; } .btn-primary:hover { background: var(--primary-dark); }
+  .btn-success { background: var(--success); color: #fff; } .btn-success:hover { background: #15803d; }
+  .btn-danger { background: var(--danger); color: #fff; } .btn-danger:hover { background: #b91c1c; }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); } .btn-ghost:hover { background: #f1f5f9; }
+  .btn-sm { padding: 4px 10px; font-size: .78rem; }
+  .actions { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #fff; border-radius: 16px; padding: 28px; width: 600px; max-width: 96vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+  .modal h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; }
+  .modal .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+  /* BILAN specific */
+  .bilan-section { margin-bottom: 24px; }
+  .bilan-title { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); padding: 8px 0 6px; border-bottom: 2px solid var(--border); margin-bottom: 2px; }
+  .bilan-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 8px; border-bottom: 1px solid #f1f5f9; font-size: .875rem; }
+  .bilan-row:last-child { border-bottom: none; }
+  .bilan-row.sub { padding-left: 20px; color: var(--muted); font-size: .83rem; }
+  .bilan-row.sub2 { padding-left: 36px; color: var(--muted); font-size: .82rem; font-style: italic; }
+  .bilan-row.total-section { font-weight: 700; font-size: .95rem; background: #f1f5f9; border-radius: 6px; padding: 9px 12px; margin-top: 8px; }
+  .bilan-row.grand-total { font-weight: 800; font-size: 1.05rem; background: #1e293b; color: #fff; border-radius: 8px; padding: 12px 16px; margin-top: 12px; }
+  .bilan-editable { display: flex; align-items: center; gap: 8px; }
+  .bilan-editable input { width: 120px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: .875rem; text-align: right; }
+  .bilan-editable input:focus { outline: none; border-color: var(--primary); }
+  .bilan-check { text-align: center; padding: 12px; border-radius: 8px; font-weight: 600; font-size: .9rem; margin-top: 16px; }
+  .bilan-check.ok { background: #dcfce7; color: #15803d; }
+  .bilan-check.ko { background: #fee2e2; color: #b91c1c; }
+
+  /* JOURNAL specific */
+  .journal-compte { font-family: monospace; font-size: .82rem; color: var(--primary); font-weight: 600; }
+  .journal-debit { color: var(--success); text-align: right; font-weight: 600; }
+  .journal-credit { color: var(--danger); text-align: right; font-weight: 600; }
+  .compte-group { background: #f8fafc; border-radius: 8px; padding: 12px; margin-bottom: 10px; border: 1px solid var(--border); }
+  .compte-group-title { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 8px; }
+
+  /* RESULT / SUM ROWS */
+  .result-box { border-radius: 12px; padding: 20px; margin-top: 16px; }
+  .result-box.positive { background: #dcfce7; border: 1px solid #86efac; }
+  .result-box.negative { background: #fee2e2; border: 1px solid #fca5a5; }
+  .result-box .result-title { font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  .result-box .result-value { font-size: 2rem; font-weight: 800; margin-top: 4px; }
+  .sum-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: .875rem; }
+  .sum-row:last-child { border-bottom: none; }
+  .sum-row.total { font-weight: 700; font-size: 1rem; padding-top: 12px; border-top: 2px solid var(--border); }
+
+  /* AMORT bar */
+  .amort-bar { height: 6px; background: #e2e8f0; border-radius: 3px; margin-top: 4px; }
+  .amort-bar-fill { height: 100%; background: var(--primary); border-radius: 3px; }
+
+  /* IMMOBILISATIONS par composants */
+  .immo-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+  .immo-card-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: linear-gradient(135deg,#1e293b,#334155); color: #fff; }
+  .immo-card-header h4 { font-size: .95rem; font-weight: 700; margin-bottom: 2px; }
+  .immo-card-header .immo-meta { font-size: .75rem; color: #94a3b8; }
+  .immo-card-body { padding: 0; }
+  .comp-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  .comp-table th { padding: 8px 12px; background: #f8fafc; color: var(--muted); font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--border); }
+  .comp-table td { padding: 9px 12px; border-bottom: 1px solid #f8fafc; vertical-align: middle; }
+  .comp-table tr:last-child td { border-bottom: none; }
+  .comp-table tr.terrain td { color: var(--muted); font-style: italic; }
+  .comp-table tr.total-row td { font-weight: 700; background: #f1f5f9; border-top: 2px solid var(--border); }
+  .dap-strip { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+  .dap-strip .dap-info { font-size: .875rem; }
+  .dap-strip .dap-info strong { display: block; font-size: .95rem; margin-bottom: 2px; }
+  .dap-strip .dap-info span { color: var(--muted); font-size: .8rem; }
+  .dap-generated { background: #f0fdf4; border-color: #86efac; }
+  .dap-generated .dap-info strong { color: var(--success); }
+  /* Modal composants table */
+  .comp-form-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: .82rem; }
+  .comp-form-table th { padding: 7px 8px; background: #f1f5f9; font-size: .7rem; font-weight: 700; color: var(--muted); text-align: left; border-bottom: 1px solid var(--border); }
+  .comp-form-table td { padding: 5px 6px; border-bottom: 1px solid #f8fafc; }
+  .comp-form-table input, .comp-form-table select { width: 100%; padding: 5px 7px; border: 1px solid var(--border); border-radius: 6px; font-size: .8rem; background: #fff; }
+  .comp-form-table input:focus, .comp-form-table select:focus { outline: none; border-color: var(--primary); }
+  .comp-total-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #f8fafc; border-radius: 8px; margin-top: 10px; font-size: .875rem; border: 1px solid var(--border); }
+  .comp-total-bar .over { color: var(--danger); font-weight: 700; }
+  .comp-total-bar .ok { color: var(--success); font-weight: 700; }
+
+  /* ── CLIENT SELECTOR ── */
+  #client-selector {
+    position: fixed; inset: 0; background: #0f172a; z-index: 200;
+    display: flex; flex-direction: column; align-items: center;
+    overflow-y: auto; padding: 40px 24px;
+  }
+  #client-selector.hidden { display: none; }
+  .cs-header { text-align: center; margin-bottom: 40px; }
+  .cs-header h1 { font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 6px; }
+  .cs-header p { color: #94a3b8; font-size: .95rem; }
+  .cs-logo { font-size: 3rem; margin-bottom: 12px; }
+  .cs-search-row { display: flex; gap: 12px; width: 100%; max-width: 860px; margin-bottom: 28px; }
+  .cs-search-row input { flex: 1; padding: 12px 16px; border-radius: 10px; border: 1px solid #334155; background: #1e293b; color: #fff; font-size: .95rem; }
+  .cs-search-row input::placeholder { color: #64748b; }
+  .cs-search-row input:focus { outline: none; border-color: #60a5fa; }
+  .cs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; width: 100%; max-width: 860px; }
+  .cs-card {
+    background: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 22px;
+    cursor: pointer; transition: all .18s; position: relative;
+  }
+  .cs-card:hover { background: #273549; border-color: #60a5fa; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+  .cs-card .cs-avatar { width: 44px; height: 44px; background: linear-gradient(135deg,#3b82f6,#8b5cf6); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 800; color: #fff; margin-bottom: 12px; }
+  .cs-card h3 { font-size: 1rem; font-weight: 700; color: #f1f5f9; margin-bottom: 2px; }
+  .cs-card .cs-siren { font-size: .75rem; color: #64748b; margin-bottom: 8px; font-family: monospace; }
+  .cs-card .cs-meta { font-size: .75rem; color: #94a3b8; display: flex; gap: 10px; flex-wrap: wrap; }
+  .cs-card .cs-meta span { background: #334155; border-radius: 4px; padding: 2px 7px; }
+  .cs-card .cs-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; opacity: 0; transition: opacity .15s; }
+  .cs-card:hover .cs-actions { opacity: 1; }
+  .cs-card .cs-btn-edit, .cs-card .cs-btn-del {
+    width: 28px; height: 28px; border: none; border-radius: 6px; cursor: pointer; font-size: .8rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cs-card .cs-btn-edit { background: #334155; color: #94a3b8; }
+  .cs-card .cs-btn-edit:hover { background: #3b82f6; color: #fff; }
+  .cs-card .cs-btn-del { background: #334155; color: #94a3b8; }
+  .cs-card .cs-btn-del:hover { background: #dc2626; color: #fff; }
+  .cs-card-new {
+    background: transparent; border: 2px dashed #334155; border-radius: 14px; padding: 22px;
+    cursor: pointer; transition: all .18s; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 8px; color: #475569; min-height: 140px;
+  }
+  .cs-card-new:hover { border-color: #60a5fa; color: #60a5fa; background: #1e293b; }
+  .cs-card-new .plus { font-size: 2rem; line-height: 1; }
+  .cs-card-new span { font-size: .875rem; font-weight: 600; }
+  .cs-empty { color: #475569; text-align: center; padding: 40px; width: 100%; max-width: 860px; }
+  /* Sidebar client bar */
+  #sidebar-client { padding: 10px 16px; background: #0f172a; border-bottom: 1px solid #334155; }
+  #sidebar-client .cl-name { font-size: .82rem; font-weight: 700; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #sidebar-client .cl-siren { font-size: .68rem; color: #64748b; font-family: monospace; }
+  #sidebar-client a { font-size: .72rem; color: #60a5fa; cursor: pointer; text-decoration: none; display: block; margin-top: 4px; }
+  #sidebar-client a:hover { color: #93c5fd; }
+
+  /* PROP CARDS */
+  .prop-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .prop-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .prop-card h4 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+  .prop-card .prop-addr { color: var(--muted); font-size: .8rem; margin-bottom: 12px; }
+  .prop-card .prop-meta { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .prop-card .prop-actions { display: flex; gap: 8px; }
+
+  /* MISC */
+  hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+  .empty { text-align: center; padding: 48px 20px; color: var(--muted); }
+  .empty .icon { font-size: 3rem; margin-bottom: 12px; }
+  .tag-journal { display: inline-block; font-size: .65rem; background: #ede9fe; color: #6d28d9; border-radius: 4px; padding: 1px 5px; margin-left: 4px; vertical-align: middle; font-weight: 600; }
+
+  @media print {
+    #sidebar { display: none; } #main { margin-left: 0; }
+    .btn, .actions, .no-print { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ ÉCRAN SÉLECTION DOSSIER ══════════════ -->
+<div id="client-selector">
+  <div class="cs-header">
+    <div class="cs-logo">📊</div>
+    <h1>LMNP Pro</h1>
+    <p>Sélectionnez ou créez un dossier client pour commencer</p>
+  </div>
+  <div class="cs-search-row">
+    <input id="cs-search" placeholder="🔍 Rechercher un dossier client…" oninput="renderClientSelector()">
+    <button class="btn btn-primary" onclick="openClientModal(null)" style="white-space:nowrap;padding:12px 20px">+ Nouveau dossier</button>
+  </div>
+  <div class="cs-grid" id="cs-grid"></div>
+</div>
+
+<!-- ══════════════ MODAL DOSSIER CLIENT ══════════════ -->
+<div class="modal-overlay" id="modal-client">
+  <div class="modal" style="width:500px">
+    <h3 id="modal-client-title">Nouveau dossier client</h3>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Nom du client / Dénomination *</label>
+        <input id="cl-nom" placeholder="ex: Dupont Jean ou SCI Les Oliviers">
+      </div>
+      <div class="form-group">
+        <label>SIREN / SIRET</label>
+        <input id="cl-siren" placeholder="123456789" maxlength="14">
+      </div>
+      <div class="form-group">
+        <label>Régime fiscal</label>
+        <select id="cl-regime">
+          <option value="reel">Réel simplifié BIC</option>
+          <option value="micro">Micro-BIC</option>
+        </select>
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Adresse</label>
+        <input id="cl-adresse" placeholder="Adresse du client">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input id="cl-email" type="email" placeholder="client@email.fr">
+      </div>
+      <div class="form-group">
+        <label>Téléphone</label>
+        <input id="cl-tel" placeholder="06 12 34 56 78">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Note / Observation</label>
+        <textarea id="cl-note" placeholder="Informations complémentaires…" rows="2"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-client')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveClient()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <h1>📊 LMNP Pro</h1>
+  <div id="sidebar-client">
+    <div class="cl-name" id="sb-client-name">—</div>
+    <div class="cl-siren" id="sb-client-siren"></div>
+    <a onclick="changerDossier()">⇄ Changer de dossier</a>
+  </div>
+  <nav>
+    <div class="nav-section">Vue générale</div>
+    <a onclick="showPage('dashboard', this)" class="active">🏠 Tableau de bord</a>
+    <a onclick="showPage('biens', this)">🏢 Mes biens</a>
+    <div class="nav-section">Comptabilité</div>
+    <a onclick="showPage('journal', this)">✏️ Saisie comptable</a>
+    <a onclick="showPage('revenus', this)">💰 Revenus</a>
+    <a onclick="showPage('charges', this)">📋 Charges</a>
+    <a onclick="showPage('amortissements', this)">📉 Amortissements</a>
+    <div class="nav-section">Synthèse</div>
+    <a onclick="showPage('bilan', this)">⚖️ Bilan</a>
+    <a onclick="showPage('resultat', this)">📊 Résultat fiscal</a>
+    <a onclick="showPage('export', this)">📤 Export</a>
+  </nav>
+  <div class="year-select">
+    <label>Exercice fiscal</label>
+    <select id="yearSelect" onchange="changeYear()"></select>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main id="main">
+
+  <!-- DASHBOARD -->
+  <div id="page-dashboard" class="page active">
+    <div class="page-header"><h2>Tableau de bord <span id="db-year" style="color:var(--muted);font-weight:400"></span></h2><p>Vue d'ensemble de votre activité LMNP</p></div>
+    <div class="stats" id="db-stats"></div>
+    <div class="grid-2">
+      <div class="card"><h3>Répartition des charges</h3><div id="charges-breakdown"></div></div>
+      <div class="card"><h3>Résultat fiscal estimé</h3><div id="db-resultat"></div></div>
+    </div>
+    <div style="margin-top:16px" class="card"><h3>Dernières écritures</h3><div id="db-recent"></div></div>
+  </div>
+
+  <!-- BIENS -->
+  <div id="page-biens" class="page">
+    <div class="page-header"><h2>Mes biens</h2><p>Gérez vos propriétés LMNP</p></div>
+    <div class="actions"><button class="btn btn-primary" onclick="openModal('modal-bien')">+ Ajouter un bien</button></div>
+    <div id="biens-list" class="prop-cards"></div>
+  </div>
+
+  <!-- JOURNAL (SAISIE COMPTABLE) -->
+  <div id="page-journal" class="page">
+    <div class="page-header">
+      <h2>Saisie comptable</h2>
+      <p>Journal des écritures — chaque saisie alimente automatiquement les onglets Revenus et Charges</p>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="openModal('modal-journal')">+ Nouvelle écriture</button>
+    </div>
+
+    <!-- Plan comptable simplifié -->
+    <div class="card" style="margin-bottom:16px">
+      <h3>Plan comptable LMNP simplifié</h3>
+      <div class="grid-2" style="gap:12px">
+        <div class="compte-group">
+          <div class="compte-group-title">🟢 Classe 7 — Produits</div>
+          <div style="font-size:.8rem;line-height:2">
+            <span class="journal-compte">706</span> Recettes locatives<br>
+            <span class="journal-compte">7064</span> Charges récupérées<br>
+            <span class="journal-compte">7068</span> Autres produits locatifs
+          </div>
+        </div>
+        <div class="compte-group">
+          <div class="compte-group-title">🔴 Classe 6 — Charges</div>
+          <div style="font-size:.8rem;line-height:2">
+            <span class="journal-compte">6100</span> Charges de copropriété &nbsp;
+            <span class="journal-compte">6160</span> Assurances<br>
+            <span class="journal-compte">6150</span> Entretien/réparations &nbsp;
+            <span class="journal-compte">6220</span> Frais de gestion<br>
+            <span class="journal-compte">6350</span> Taxes (foncière, CFE) &nbsp;
+            <span class="journal-compte">6610</span> Intérêts d'emprunt<br>
+            <span class="journal-compte">6226</span> Honoraires comptable &nbsp;
+            <span class="journal-compte">6811</span> Dot. amortissements
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Journal des écritures <span id="journal-year"></span></h3>
+      <div class="table-wrap">
+        <table id="journal-table">
+          <thead>
+            <tr>
+              <th>N°</th><th>Date</th><th>Bien</th><th>Compte</th><th>Libellé</th>
+              <th style="text-align:right">Débit (charge)</th>
+              <th style="text-align:right">Crédit (produit)</th>
+              <th>Référence</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="journal-body"></tbody>
+          <tfoot id="journal-foot"></tfoot>
+        </table>
+      </div>
+      <div id="journal-empty" class="empty" style="display:none"><div class="icon">✏️</div><p>Aucune écriture pour cet exercice. Utilisez le bouton ci-dessus pour saisir vos premières écritures.</p></div>
+    </div>
+  </div>
+
+  <!-- REVENUS -->
+  <div id="page-revenus" class="page">
+    <div class="page-header"><h2>Revenus locatifs</h2><p>Loyers encaissés pour l'exercice <span id="rev-year"></span></p></div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="openModal('modal-revenu')">+ Saisie directe</button>
+      <span style="color:var(--muted);font-size:.8rem">Les écritures issues de la saisie comptable apparaissent aussi ici <span class="tag-journal">Journal</span></span>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table><thead><tr><th>Date</th><th>Bien</th><th>Type</th><th>Locataire</th><th style="text-align:right">Montant HT</th><th style="text-align:right">TVA</th><th style="text-align:right">TTC</th><th>Note</th><th></th></tr></thead>
+        <tbody id="revenus-body"></tbody></table>
+      </div>
+      <div id="revenus-empty" class="empty" style="display:none"><div class="icon">💰</div><p>Aucun revenu enregistré pour cet exercice</p></div>
+      <div id="revenus-total" style="margin-top:12px;text-align:right;font-weight:700;color:var(--success)"></div>
+    </div>
+  </div>
+
+  <!-- CHARGES -->
+  <div id="page-charges" class="page">
+    <div class="page-header"><h2>Charges déductibles</h2><p>Toutes les charges de l'exercice <span id="chg-year"></span></p></div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="openModal('modal-charge')">+ Saisie directe</button>
+      <span style="color:var(--muted);font-size:.8rem">Les écritures issues de la saisie comptable apparaissent aussi ici <span class="tag-journal">Journal</span></span>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table><thead><tr><th>Date</th><th>Bien</th><th>Catégorie</th><th>Libellé</th><th style="text-align:right">Montant HT</th><th style="text-align:right">TVA</th><th style="text-align:right">TTC</th><th>Note</th><th></th></tr></thead>
+        <tbody id="charges-body"></tbody></table>
+      </div>
+      <div id="charges-empty" class="empty" style="display:none"><div class="icon">📋</div><p>Aucune charge enregistrée pour cet exercice</p></div>
+      <div id="charges-total" style="margin-top:12px;text-align:right;font-weight:700;color:var(--danger)"></div>
+    </div>
+  </div>
+
+  <!-- AMORTISSEMENTS -->
+  <div id="page-amortissements" class="page">
+    <div class="page-header"><h2>Amortissements</h2><p>Plan d'amortissement par composants — exercice <span id="amort-year"></span></p></div>
+
+    <!-- Bande DAP -->
+    <div id="dap-strip-container"></div>
+
+    <!-- Immobilisations par composants -->
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+        <h3 style="margin:0">🏗️ Immobilisations par composants</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <select id="immo-template" class="btn btn-ghost" style="height:36px;padding:0 10px;font-size:.82rem" onchange="applyTemplate()">
+            <option value="">— Modèle prédéfini —</option>
+            <option value="appartement">🏠 Appartement meublé</option>
+            <option value="maison">🏡 Maison meublée</option>
+            <option value="parking">🅿️ Parking / Box</option>
+            <option value="studio">🛏️ Studio</option>
+          </select>
+          <button class="btn btn-primary" onclick="openModal('modal-immo')">+ Nouvelle immobilisation</button>
+        </div>
+      </div>
+      <div id="immos-list"></div>
+      <div id="immos-empty" class="empty" style="display:none"><div class="icon">🏗️</div><p>Aucune immobilisation enregistrée. Ajoutez votre premier bien par composants.</p></div>
+    </div>
+
+    <!-- Actifs simples (héritage) -->
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="margin:0">📦 Actifs amortissables simples</h3>
+        <button class="btn btn-ghost btn-sm" onclick="openModal('modal-amort')">+ Ajouter</button>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Bien</th><th>Désignation</th><th>Catégorie</th><th style="text-align:right">Valeur</th><th style="text-align:right">Durée</th><th>Mise en service</th><th style="text-align:right">Dot. <span id="amort-year2"></span></th><th>Progression</th><th style="text-align:right">VNC</th><th></th></tr></thead>
+        <tbody id="amort-body"></tbody></table>
+      </div>
+      <div id="amort-empty" class="empty" style="display:none;padding:24px"><div class="icon" style="font-size:2rem">📦</div><p>Aucun actif simple enregistré</p></div>
+    </div>
+
+    <!-- Synthèse annuelle -->
+    <div class="card">
+      <h3>Synthèse des dotations — <span id="amort-year3"></span></h3>
+      <div id="amort-synthese"></div>
+    </div>
+  </div>
+
+  <!-- BILAN -->
+  <div id="page-bilan" class="page">
+    <div class="page-header">
+      <h2>Bilan comptable simplifié</h2>
+      <p>Situation patrimoniale au 31/12/<span id="bilan-year"></span> — Renseignez les données manuelles dans les champs éditables</p>
+    </div>
+    <div class="actions no-print">
+      <button class="btn btn-primary" onclick="saveBilanData()">💾 Sauvegarder les données du bilan</button>
+      <button class="btn btn-ghost" onclick="window.print()">🖨️ Imprimer</button>
+    </div>
+    <div class="grid-2" style="align-items:start">
+      <!-- ACTIF -->
+      <div class="card">
+        <h3 style="color:var(--primary);font-size:1rem;margin-bottom:16px">ACTIF</h3>
+
+        <div class="bilan-section">
+          <div class="bilan-title">Actif immobilisé</div>
+          <div class="bilan-row sub"><span>Immobilisations brutes</span><span id="b-immo-brut" class="blue"></span></div>
+          <div class="bilan-row sub2"><span>– Amortissements cumulés</span><span id="b-amort-cumul" class="red"></span></div>
+          <div class="bilan-row sub" style="font-weight:600"><span>= Valeur nette comptable (VNC)</span><span id="b-vnc" class="blue"></span></div>
+        </div>
+
+        <div class="bilan-section">
+          <div class="bilan-title">Actif circulant</div>
+          <div class="bilan-row sub">
+            <span>Créances locataires (loyers à recevoir)</span>
+            <div class="bilan-editable"><input type="number" id="b-creances" step="0.01" placeholder="0" oninput="updateBilanCalc()"> €</div>
+          </div>
+          <div class="bilan-row sub">
+            <span>Charges constatées d'avance</span>
+            <div class="bilan-editable"><input type="number" id="b-cca" step="0.01" placeholder="0" oninput="updateBilanCalc()"> €</div>
+          </div>
+        </div>
+
+        <div class="bilan-section">
+          <div class="bilan-title">Trésorerie</div>
+          <div class="bilan-row sub">
+            <span>Compte bancaire dédié LMNP</span>
+            <div class="bilan-editable"><input type="number" id="b-banque" step="0.01" placeholder="0" oninput="updateBilanCalc()"> €</div>
+          </div>
+          <div class="bilan-row sub">
+            <span>Caisse / autre</span>
+            <div class="bilan-editable"><input type="number" id="b-caisse" step="0.01" placeholder="0" oninput="updateBilanCalc()"> €</div>
+          </div>
+        </div>
+
+        <div class="bilan-row grand-total"><span>TOTAL ACTIF</span><span id="b-total-actif"></span></div>
+      </div>
+
+      <!-- PASSIF -->
+      <div class="card">
+        <h3 style="color:var(--danger);font-size:1rem;margin-bottom:16px">PASSIF</h3>
+
+        <div class="bilan-section">
+          <div class="bilan-title">Capitaux propres</div>
+          <div class="bilan-row sub">
+            <span>Apport initial / capital investi</span>
+            <div class="bilan-editable"><input type="number" id="b-capital" step="0.01" placeholder="0" oninput="updateBilanCalc()"> €</div>
+          </div>
+          <div class="bilan-row sub">
+            <span>
+              Résultats antérieurs cumulés
+              <span id="b-res-ant-auto-label" style="font-size:.72rem;color:var(--primary);margin-left:6px;cursor:pointer" onclick="toggleResAntMode()" title="Cliquez pour basculer entre calcul auto et saisie manuelle"></span>
+            </span>
+            <div class="bilan-editable">
+              <span id="b-res-ant-auto" style="font-weight:600;min-width:100px;text-align:right;display:none"></span>
+              <input type="number" id="b-res-ant" step="0.01" placeholder="0" oninput="updateBilanCalc()" style="display:none"> €
+            </div>
+          </div>
+          <div class="bilan-row sub" style="font-weight:600">
+            <span>Résultat de l'exercice <span id="bilan-year2"></span></span>
+            <span id="b-resultat-exo" class=""></span>
+          </div>
+          <div class="bilan-row total-section"><span>Sous-total capitaux propres</span><span id="b-cap-propres"></span></div>
+        </div>
+
+        <div class="bilan-section">
+          <div class="bilan-title">Dettes financières</div>
+          <div class="bilan-row sub">
+            <span>Emprunts bancaires (CRD)</span>
+            <div class="bilan-editable"><input type="number" id="b-emprunts" step="0.01" placeholder="0" oninput="updateBilanCalc()"> €</div>
+          </div>
+          <div class="bilan-row sub">
+            <span>Dépôts de garantie locataires</span>
+            <div class="bilan-editable"><input type="number" id="b-depots" step="0.01" placeholder="0" oninput="updateBilanCalc()"> €</div>
+          </div>
+        </div>
+
+        <div class="bilan-section">
+          <div class="bilan-title">Dettes d'exploitation</div>
+          <div class="bilan-row sub">
+            <span>Dettes fournisseurs</span>
+            <div class="bilan-editable"><input type="number" id="b-fournisseurs" step="0.01" placeholder="0" oninput="updateBilanCalc()"> €</div>
+          </div>
+          <div class="bilan-row sub">
+            <span>Dettes fiscales et sociales</span>
+            <div class="bilan-editable"><input type="number" id="b-dettes-fisc" step="0.01" placeholder="0" oninput="updateBilanCalc()"> €</div>
+          </div>
+          <div class="bilan-row sub">
+            <span>Produits constatés d'avance</span>
+            <div class="bilan-editable"><input type="number" id="b-pca" step="0.01" placeholder="0" oninput="updateBilanCalc()"> €</div>
+          </div>
+        </div>
+
+        <div class="bilan-row grand-total"><span>TOTAL PASSIF</span><span id="b-total-passif"></span></div>
+      </div>
+    </div>
+
+    <!-- Équilibre -->
+    <div id="bilan-equilibre" class="bilan-check" style="margin-top:16px"></div>
+
+    <!-- Comparaison N-1 -->
+    <div class="card" style="margin-top:16px">
+      <h3>Comparaison avec l'exercice N-1</h3>
+      <div id="bilan-comparaison-n1"></div>
+    </div>
+
+    <!-- Notes -->
+    <div class="card" style="margin-top:16px">
+      <h3>Récapitulatif des immobilisations</h3>
+      <div class="table-wrap"><table id="bilan-immo-table">
+        <thead><tr><th>Bien</th><th>Désignation</th><th>Catégorie</th><th style="text-align:right">Valeur brute</th><th style="text-align:right">Amort. cumulé</th><th style="text-align:right">VNC</th></tr></thead>
+        <tbody id="bilan-immo-body"></tbody>
+        <tfoot id="bilan-immo-foot"></tfoot>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- RESULTAT -->
+  <div id="page-resultat" class="page">
+    <div class="page-header"><h2>Résultat fiscal BIC</h2><p>Calcul du résultat imposable pour l'exercice <span id="res-year"></span></p></div>
+    <div class="grid-2" style="margin-bottom:16px">
+      <div class="card"><h3>Produits (A)</h3><div id="res-produits"></div></div>
+      <div class="card"><h3>Charges (B)</h3><div id="res-charges-detail"></div></div>
+    </div>
+    <div class="card">
+      <h3>Résultat fiscal = A − B</h3>
+      <div id="res-final"></div>
+      <hr>
+      <h3 style="margin-top:0">Report des déficits</h3>
+      <p style="color:var(--muted);font-size:.8rem;margin-bottom:12px">Les déficits LMNP sont reportables sur les bénéfices LMNP des 10 années suivantes.</p>
+      <div id="res-deficits"></div>
+      <div style="margin-top:12px"><button class="btn btn-ghost btn-sm" onclick="openModal('modal-deficit')">+ Ajouter un déficit antérieur</button></div>
+    </div>
+  </div>
+
+  <!-- EXPORT -->
+  <div id="page-export" class="page">
+    <div class="page-header"><h2>Export & Bilan fiscal</h2><p>Récapitulatif annuel pour votre expert-comptable ou déclaration 2031</p></div>
+
+    <!-- FEC BLOCK -->
+    <div class="card" style="margin-bottom:16px;border-color:#6366f1">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <h3 style="color:#6366f1;margin-bottom:4px">📂 Export FEC — Fichier des Écritures Comptables</h3>
+          <p style="font-size:.82rem;color:var(--muted);max-width:600px">
+            Format officiel DGFiP (arrêté du 29/07/2013). Génère un fichier <code>.txt</code> séparé par <code>|</code> conforme à l'article 47 A-I du CGI.
+            Contient tous les journaux : recettes (REC), achats (ACH), opérations diverses DAP (OD).
+          </p>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div class="form-group" style="margin:0">
+            <label style="font-size:.75rem;color:var(--muted)">N° SIREN (pour le nom du fichier)</label>
+            <input id="fec-siren" placeholder="123456789" maxlength="9" style="width:130px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:.875rem">
+          </div>
+          <button class="btn btn-primary" style="background:#6366f1;margin-top:16px" onclick="exportFEC()">⬇️ Télécharger FEC <span id="fec-year-label"></span></button>
+        </div>
+      </div>
+      <div style="margin-top:14px;background:#f5f3ff;border-radius:8px;padding:12px;font-size:.8rem;color:#4c1d95">
+        <strong>Contenu du FEC généré :</strong>
+        <span id="fec-summary"></span>
+      </div>
+      <div style="margin-top:10px;padding:10px 14px;background:#fef9c3;border-radius:8px;font-size:.78rem;color:#713f12">
+        ⚠️ <strong>Important :</strong> Si vous n'avez pas encore généré les écritures DAP dans l'onglet Amortissements, le FEC inclura quand même les dotations calculées automatiquement (en OD au 31/12). Pour un FEC optimal, générez d'abord vos DAP.
+      </div>
+    </div>
+
+    <div class="actions no-print">
+      <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimer</button>
+      <button class="btn btn-ghost" onclick="exportJSON()">💾 Sauvegarder les données</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('import-file').click()">📂 Importer des données</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(event)">
+    </div>
+    <div class="card" id="export-content"><div id="export-body"></div></div>
+  </div>
+
+</main>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- Modal Bien -->
+<div class="modal-overlay" id="modal-bien">
+  <div class="modal">
+    <h3 id="modal-bien-title">Ajouter un bien</h3>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column:1/-1"><label>Nom du bien *</label><input id="bien-nom" placeholder="ex: Appartement Lyon T2"></div>
+      <div class="form-group" style="grid-column:1/-1"><label>Adresse</label><input id="bien-adresse" placeholder="12 rue Victor Hugo, 69001 Lyon"></div>
+      <div class="form-group"><label>Type</label><select id="bien-type"><option value="meublé">Meublé classique</option><option value="saisonnier">Saisonnier / Airbnb</option><option value="etudiant">Résidence étudiante</option><option value="senior">Résidence senior</option></select></div>
+      <div class="form-group"><label>Surface (m²)</label><input id="bien-surface" type="number" placeholder="45"></div>
+      <div class="form-group"><label>Date d'acquisition</label><input id="bien-date-acq" type="date"></div>
+      <div class="form-group"><label>Prix d'acquisition (€)</label><input id="bien-prix" type="number" placeholder="150000"></div>
+      <div class="form-group"><label>Loyer mensuel HC (€)</label><input id="bien-loyer" type="number" placeholder="600"></div>
+      <div class="form-group"><label>Statut</label><select id="bien-statut"><option value="loué">Loué</option><option value="vacant">Vacant</option><option value="travaux">En travaux</option></select></div>
+    </div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modal-bien')">Annuler</button><button class="btn btn-primary" onclick="saveBien()">Enregistrer</button></div>
+  </div>
+</div>
+
+<!-- Modal Journal (Saisie comptable) -->
+<div class="modal-overlay" id="modal-journal">
+  <div class="modal">
+    <h3>Nouvelle écriture comptable</h3>
+    <p style="color:var(--muted);font-size:.82rem;margin-bottom:16px">L'écriture sera automatiquement reportée dans l'onglet Revenus ou Charges selon le compte sélectionné.</p>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Date *</label>
+        <input id="jnl-date" type="date">
+      </div>
+      <div class="form-group">
+        <label>Bien</label>
+        <select id="jnl-bien"></select>
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Compte comptable *</label>
+        <select id="jnl-compte" onchange="onJnlCompteChange()">
+          <optgroup label="── Classe 7 — Produits ──────────────">
+            <option value="706|7|loyer">706 — Recettes locatives (loyer)</option>
+            <option value="7064|7|charges">7064 — Charges locatives récupérées</option>
+            <option value="7068|7|autre">7068 — Autres produits locatifs</option>
+          </optgroup>
+          <optgroup label="── Classe 6 — Charges ───────────────">
+            <option value="6100|6|copropriété">6100 — Charges de copropriété</option>
+            <option value="6160|6|assurance">6160 — Primes d'assurance (PNO/GLI)</option>
+            <option value="6150|6|travaux">6150 — Entretien et réparations</option>
+            <option value="6220|6|gestion">6220 — Frais de gestion agence</option>
+            <option value="6350|6|taxe-foncière">6350 — Taxe foncière / CFE</option>
+            <option value="6610|6|intérêts">6610 — Intérêts d'emprunt</option>
+            <option value="6226|6|comptable">6226 — Honoraires comptable / CGA</option>
+            <option value="606|6|fournitures">606 — Fournitures / petits équipements</option>
+            <option value="626|6|publicité">626 — Frais de publicité / annonces</option>
+            <option value="625|6|déplacement">625 — Frais de déplacement</option>
+            <option value="627|6|autre">627 — Autre charge d'exploitation</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Libellé *</label>
+        <input id="jnl-libelle" placeholder="Description de l'écriture">
+      </div>
+      <div class="form-group">
+        <label>Montant HT (€) *</label>
+        <input id="jnl-montant" type="number" step="0.01" placeholder="0.00" oninput="calcJnlTTC()">
+      </div>
+      <div class="form-group">
+        <label>TVA (%)</label>
+        <select id="jnl-tva" onchange="calcJnlTTC()">
+          <option value="0">0% (exonéré)</option>
+          <option value="20">20%</option>
+          <option value="10">10%</option>
+          <option value="5.5">5.5%</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Montant TTC (€)</label>
+        <input id="jnl-ttc" readonly style="background:#f1f5f9">
+      </div>
+      <div class="form-group">
+        <label>Locataire / Tiers</label>
+        <input id="jnl-tiers" placeholder="Nom du locataire ou fournisseur">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Référence pièce</label>
+        <input id="jnl-ref" placeholder="N° facture, quittance, relevé...">
+      </div>
+    </div>
+    <div id="jnl-preview" style="margin-top:14px;padding:12px;background:#f1f5f9;border-radius:8px;font-size:.82rem;display:none">
+      <strong>Aperçu :</strong> <span id="jnl-preview-text"></span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-journal')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveJournal()">Enregistrer l'écriture</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Revenu -->
+<div class="modal-overlay" id="modal-revenu">
+  <div class="modal">
+    <h3>Ajouter un revenu (saisie directe)</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Date *</label><input id="rev-date" type="date"></div>
+      <div class="form-group"><label>Bien *</label><select id="rev-bien"></select></div>
+      <div class="form-group"><label>Type *</label>
+        <select id="rev-type"><option value="loyer">Loyer nu</option><option value="charges">Charges récupérées</option><option value="depot">Dépôt de garantie</option><option value="indemnite">Indemnité locative</option><option value="subvention">Subvention / aide</option><option value="autre">Autre produit</option></select>
+      </div>
+      <div class="form-group"><label>Locataire</label><input id="rev-locataire" placeholder="Nom du locataire"></div>
+      <div class="form-group"><label>Montant HT (€) *</label><input id="rev-ht" type="number" step="0.01" placeholder="600.00" oninput="calcRevTTC()"></div>
+      <div class="form-group"><label>TVA (%)</label><select id="rev-tva" onchange="calcRevTTC()"><option value="0">0% (exonéré)</option><option value="20">20%</option><option value="10">10%</option></select></div>
+      <div class="form-group"><label>Montant TTC (€)</label><input id="rev-ttc" readonly style="background:#f1f5f9"></div>
+      <div class="form-group" style="grid-column:1/-1"><label>Note</label><input id="rev-note" placeholder="ex: Loyer janvier 2025"></div>
+    </div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modal-revenu')">Annuler</button><button class="btn btn-primary" onclick="saveRevenu()">Enregistrer</button></div>
+  </div>
+</div>
+
+<!-- Modal Charge -->
+<div class="modal-overlay" id="modal-charge">
+  <div class="modal">
+    <h3>Ajouter une charge (saisie directe)</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Date *</label><input id="chg-date" type="date"></div>
+      <div class="form-group"><label>Bien *</label><select id="chg-bien"></select></div>
+      <div class="form-group"><label>Catégorie *</label>
+        <select id="chg-cat">
+          <option value="intérêts">Intérêts d'emprunt</option><option value="assurance">Assurance (PNO/GLI)</option>
+          <option value="gestion">Frais de gestion agence</option><option value="copropriété">Charges de copropriété</option>
+          <option value="taxe-foncière">Taxe foncière</option><option value="travaux">Travaux entretien/réparation</option>
+          <option value="comptable">Honoraires comptable / CGA</option><option value="cfe">CFE</option>
+          <option value="électricité">Électricité / Gaz</option><option value="internet">Internet / Téléphonie</option>
+          <option value="fournitures">Fournitures / petits équipements</option><option value="publicité">Publicité / annonces</option>
+          <option value="déplacement">Frais de déplacement</option><option value="contentieux">Frais contentieux</option>
+          <option value="autre">Autre charge</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Libellé *</label><input id="chg-libelle" placeholder="Description de la charge"></div>
+      <div class="form-group"><label>Montant HT (€) *</label><input id="chg-ht" type="number" step="0.01" placeholder="0.00" oninput="calcChgTTC()"></div>
+      <div class="form-group"><label>TVA (%)</label><select id="chg-tva" onchange="calcChgTTC()"><option value="0">0% (non soumis)</option><option value="20">20%</option><option value="10">10%</option><option value="5.5">5.5%</option></select></div>
+      <div class="form-group"><label>Montant TTC (€)</label><input id="chg-ttc" readonly style="background:#f1f5f9"></div>
+      <div class="form-group" style="grid-column:1/-1"><label>Note</label><input id="chg-note" placeholder="Référence facture, fournisseur..."></div>
+    </div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modal-charge')">Annuler</button><button class="btn btn-primary" onclick="saveCharge()">Enregistrer</button></div>
+  </div>
+</div>
+
+<!-- Modal Immobilisation par composants -->
+<div class="modal-overlay" id="modal-immo">
+  <div class="modal" style="width:780px">
+    <h3 id="modal-immo-title">Nouvelle immobilisation par composants</h3>
+    <div class="form-grid" style="margin-bottom:16px">
+      <div class="form-group"><label>Bien *</label><select id="immo-bien"></select></div>
+      <div class="form-group" style="grid-column:span 2"><label>Désignation *</label><input id="immo-nom" placeholder="ex: Appartement Lyon T2 — 12 rue Victor Hugo"></div>
+      <div class="form-group"><label>Date d'acquisition *</label><input id="immo-date" type="date"></div>
+      <div class="form-group"><label>Valeur totale d'acquisition (€) *</label><input id="immo-valeur-totale" type="number" step="0.01" placeholder="150000" oninput="updateImmoTotal()"></div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <strong style="font-size:.875rem">Décomposition en composants</strong>
+      <div style="display:flex;gap:8px">
+        <select id="comp-preset" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:.8rem" onchange="loadPresetComposants()">
+          <option value="">— Charger un modèle de composants —</option>
+          <option value="appartement">Appartement meublé (standard)</option>
+          <option value="maison">Maison meublée (standard)</option>
+          <option value="parking">Parking / Box</option>
+          <option value="studio">Studio</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="addComposantRow()">+ Ligne</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="comp-form-table">
+        <thead><tr>
+          <th style="width:28%">Composant</th>
+          <th style="width:17%">Valeur (€)</th>
+          <th style="width:10%">Durée (ans)<br><small style="font-weight:400">0=terrain</small></th>
+          <th style="width:13%">Compte</th>
+          <th style="width:14%">Dot./an (€)</th>
+          <th style="width:14%">% valeur tot.</th>
+          <th style="width:4%"></th>
+        </tr></thead>
+        <tbody id="composants-tbody"></tbody>
+      </table>
+    </div>
+    <div class="comp-total-bar" id="immo-total-bar">
+      <span>Valeur totale des composants : <strong id="comp-total-val">0,00 €</strong></span>
+      <span id="comp-total-diff"></span>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-immo')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveImmobilisation()">Enregistrer l'immobilisation</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Amortissement simple -->
+<div class="modal-overlay" id="modal-amort">
+  <div class="modal">
+    <h3>Ajouter un actif amortissable</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Bien *</label><select id="amort-bien"></select></div>
+      <div class="form-group"><label>Catégorie *</label>
+        <select id="amort-cat" onchange="setAmortDuree()">
+          <option value="immeuble" data-duree="30">Immeuble (hors terrain)</option>
+          <option value="mobilier" data-duree="7">Mobilier / literie</option>
+          <option value="électroménager" data-duree="5">Électroménager</option>
+          <option value="travaux-amelio" data-duree="10">Travaux d'amélioration</option>
+          <option value="informatique" data-duree="3">Matériel informatique</option>
+          <option value="autre" data-duree="5">Autre</option>
+        </select>
+      </div>
+      <div class="form-group" style="grid-column:1/-1"><label>Désignation *</label><input id="amort-designation" placeholder="ex: Bien immobilier - partie bâtie"></div>
+      <div class="form-group"><label>Valeur d'origine (€) *</label><input id="amort-valeur" type="number" step="0.01" placeholder="120000"></div>
+      <div class="form-group"><label>Durée d'amortissement (ans) *</label><input id="amort-duree" type="number" placeholder="30"></div>
+      <div class="form-group"><label>Date de mise en service *</label><input id="amort-mise" type="date"></div>
+      <div class="form-group"><label>Note</label><input id="amort-note" placeholder=""></div>
+    </div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modal-amort')">Annuler</button><button class="btn btn-primary" onclick="saveAmort()">Enregistrer</button></div>
+  </div>
+</div>
+
+<!-- Modal Déficit -->
+<div class="modal-overlay" id="modal-deficit">
+  <div class="modal">
+    <h3>Ajouter un déficit antérieur</h3>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px">Déficits des exercices précédents reportables sur vos bénéfices LMNP (10 ans).</p>
+    <div class="form-grid">
+      <div class="form-group"><label>Année *</label><input id="def-annee" type="number" placeholder="2023"></div>
+      <div class="form-group"><label>Montant du déficit (€) *</label><input id="def-montant" type="number" step="0.01" placeholder="2500"></div>
+      <div class="form-group" style="grid-column:1/-1"><label>Note</label><input id="def-note" placeholder=""></div>
+    </div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modal-deficit')">Annuler</button><button class="btn btn-primary" onclick="saveDeficit()">Enregistrer</button></div>
+  </div>
+</div>
+
+<script>
+// ==================== CLIENTS ====================
+let clients = [];
+let currentClientId = null;
+let editingClientId = null;
+
+function loadClients() {
+  const saved = localStorage.getItem('lmnp-clients');
+  clients = saved ? JSON.parse(saved) : [];
+}
+function saveClients() { localStorage.setItem('lmnp-clients', JSON.stringify(clients)); }
+
+function clientDataKey(id) { return 'lmnp-data-' + id; }
+
+function renderClientSelector() {
+  const q = (document.getElementById('cs-search')?.value || '').toLowerCase();
+  const filtered = clients.filter(c =>
+    c.nom.toLowerCase().includes(q) || (c.siren||'').includes(q)
+  );
+  const grid = document.getElementById('cs-grid');
+  if (!grid) return;
+
+  let html = '';
+  if (!filtered.length && !q) {
+    html = `<div class="cs-empty"><div style="font-size:3rem;margin-bottom:12px">📁</div><p>Aucun dossier client.<br>Créez votre premier dossier pour commencer.</p></div>`;
+  } else if (!filtered.length) {
+    html = `<div class="cs-empty"><p>Aucun dossier correspondant à "<b>${q}</b>"</p></div>`;
+  } else {
+    html = filtered.map(c => {
+      const d = JSON.parse(localStorage.getItem(clientDataKey(c.id)) || '{}');
+      const nbBiens = (d.biens||[]).length;
+      const nbRev   = (d.revenus||[]).length;
+      const initials = c.nom.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) || '?';
+      const lastMod = c.updatedAt ? new Date(c.updatedAt).toLocaleDateString('fr-FR') : '—';
+      return `<div class="cs-card" onclick="selectClient('${c.id}')">
+        <div class="cs-actions" onclick="event.stopPropagation()">
+          <button class="cs-btn-edit" onclick="openClientModal('${c.id}')" title="Modifier">✏️</button>
+          <button class="cs-btn-del"  onclick="deleteClient('${c.id}')"    title="Supprimer">🗑️</button>
+        </div>
+        <div class="cs-avatar">${initials}</div>
+        <h3>${c.nom}</h3>
+        <div class="cs-siren">${c.siren ? 'SIREN : ' + c.siren : 'SIREN non renseigné'}</div>
+        <div class="cs-meta">
+          <span>🏢 ${nbBiens} bien${nbBiens>1?'s':''}</span>
+          <span>💰 ${nbRev} revenu${nbRev>1?'s':''}</span>
+          <span>📅 ${lastMod}</span>
+          <span>${c.regime === 'micro' ? 'Micro-BIC' : 'Réel simplifié'}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  // Bouton "Nouveau" en fin de grille
+  html += `<div class="cs-card-new" onclick="openClientModal(null)">
+    <div class="plus">＋</div>
+    <span>Nouveau dossier client</span>
+  </div>`;
+  grid.innerHTML = html;
+}
+
+function openClientModal(id) {
+  editingClientId = id;
+  const c = id ? clients.find(x => x.id === id) : null;
+  document.getElementById('modal-client-title').textContent = id ? 'Modifier le dossier' : 'Nouveau dossier client';
+  document.getElementById('cl-nom').value     = c?.nom     || '';
+  document.getElementById('cl-siren').value   = c?.siren   || '';
+  document.getElementById('cl-regime').value  = c?.regime  || 'reel';
+  document.getElementById('cl-adresse').value = c?.adresse || '';
+  document.getElementById('cl-email').value   = c?.email   || '';
+  document.getElementById('cl-tel').value     = c?.tel     || '';
+  document.getElementById('cl-note').value    = c?.note    || '';
+  document.getElementById('modal-client').classList.add('open');
+}
+
+function saveClient() {
+  const nom = document.getElementById('cl-nom').value.trim();
+  if (!nom) return alert('Le nom du client est requis.');
+  const obj = {
+    nom,
+    siren:   document.getElementById('cl-siren').value.trim(),
+    regime:  document.getElementById('cl-regime').value,
+    adresse: document.getElementById('cl-adresse').value.trim(),
+    email:   document.getElementById('cl-email').value.trim(),
+    tel:     document.getElementById('cl-tel').value.trim(),
+    note:    document.getElementById('cl-note').value.trim(),
+    updatedAt: new Date().toISOString(),
+  };
+  if (editingClientId) {
+    const idx = clients.findIndex(x => x.id === editingClientId);
+    if (idx >= 0) clients[idx] = { ...clients[idx], ...obj };
+  } else {
+    clients.push({ id: uid(), createdAt: new Date().toISOString(), ...obj });
+  }
+  saveClients();
+  closeModal('modal-client');
+  renderClientSelector();
+  // Si on modifie le dossier courant, mettre à jour la sidebar
+  if (editingClientId === currentClientId) updateSidebarClient();
+}
+
+function deleteClient(id) {
+  const c = clients.find(x => x.id === id);
+  if (!confirm(`Supprimer le dossier "${c?.nom}" ?\nToutes les données de ce client seront définitivement supprimées.`)) return;
+  clients = clients.filter(x => x.id !== id);
+  localStorage.removeItem(clientDataKey(id));
+  saveClients();
+  if (currentClientId === id) changerDossier();
+  else renderClientSelector();
+}
+
+function selectClient(id) {
+  currentClientId = id;
+  // Mettre à jour updatedAt
+  const c = clients.find(x => x.id === id);
+  if (c) { c.updatedAt = new Date().toISOString(); saveClients(); }
+  // Charger les données du client
+  load();
+  // Masquer le sélecteur, afficher l'app
+  document.getElementById('client-selector').classList.add('hidden');
+  updateSidebarClient();
+  initYears();
+  renderDashboard();
+  // Pré-remplir le SIREN FEC
+  const sirenEl = document.getElementById('fec-siren');
+  if (sirenEl && c?.siren) sirenEl.value = c.siren;
+}
+
+function changerDossier() {
+  currentClientId = null;
+  data = { biens:[], revenus:[], charges:[], amortissements:[], immobilisations:[], deficits:[], journal:[], bilanData:{}, dapGeneres:{} };
+  loadClients();
+  renderClientSelector();
+  document.getElementById('client-selector').classList.remove('hidden');
+}
+
+function updateSidebarClient() {
+  const c = clients.find(x => x.id === currentClientId);
+  document.getElementById('sb-client-name').textContent  = c?.nom   || '—';
+  document.getElementById('sb-client-siren').textContent = c?.siren ? 'SIREN : ' + c.siren : '';
+}
+
+// ==================== DATA ====================
+let data = { biens: [], revenus: [], charges: [], amortissements: [], immobilisations: [], deficits: [], journal: [], bilanData: {}, dapGeneres: {} };
+let currentYear = new Date().getFullYear();
+let editingBienId = null;
+
+function load() {
+  if (!currentClientId) return;
+  const saved = localStorage.getItem(clientDataKey(currentClientId));
+  if (saved) {
+    const d = JSON.parse(saved);
+    data = { biens:[], revenus:[], charges:[], amortissements:[], immobilisations:[], deficits:[], journal:[], bilanData:{}, dapGeneres:{}, ...d };
+  } else {
+    data = { biens:[], revenus:[], charges:[], amortissements:[], immobilisations:[], deficits:[], journal:[], bilanData:{}, dapGeneres:{} };
+  }
+}
+function save() {
+  if (!currentClientId) return;
+  // Mettre à jour updatedAt du client
+  const c = clients.find(x => x.id === currentClientId);
+  if (c) { c.updatedAt = new Date().toISOString(); saveClients(); }
+  localStorage.setItem(clientDataKey(currentClientId), JSON.stringify(data));
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function fmt(n) { return Number(n||0).toLocaleString('fr-FR',{style:'currency',currency:'EUR'}); }
+function fmtNum(n) { return Number(n||0).toFixed(2); }
+function gv(id) { return document.getElementById(id)?.value || ''; }
+
+// ==================== YEAR ====================
+function initYears() {
+  const sel = document.getElementById('yearSelect');
+  let opts = '';
+  for (let y = 2030; y >= 2015; y--) opts += `<option value="${y}" ${y===currentYear?'selected':''}>${y}</option>`;
+  sel.innerHTML = opts;
+}
+function changeYear() { currentYear = parseInt(document.getElementById('yearSelect').value); refreshAll(); }
+
+// ==================== NAVIGATION ====================
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('#sidebar nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+  refreshPage(name);
+}
+function refreshAll() {
+  const active = document.querySelector('.page.active');
+  if (active) refreshPage(active.id.replace('page-', ''));
+}
+function refreshPage(name) {
+  switch(name) {
+    case 'dashboard': renderDashboard(); break;
+    case 'biens': renderBiens(); break;
+    case 'journal': renderJournal(); break;
+    case 'revenus': renderRevenus(); break;
+    case 'charges': renderCharges(); break;
+    case 'amortissements': renderAmort(); break;
+    case 'bilan': renderBilan(); break;
+    case 'resultat': renderResultat(); break;
+    case 'export': renderExport(); break;
+  }
+}
+
+// ==================== MODALS ====================
+function openModal(id) {
+  if (['modal-revenu','modal-charge','modal-amort','modal-journal','modal-immo'].includes(id)) populateBienSelects();
+  document.getElementById(id).classList.add('open');
+  if (id === 'modal-immo') {
+    document.getElementById('immo-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('immo-nom').value = '';
+    document.getElementById('immo-valeur-totale').value = '';
+    document.getElementById('composants-tbody').innerHTML = '';
+    compRowIndex = 0;
+    updateImmoTotal();
+  }
+  const today = new Date().toISOString().split('T')[0];
+  if (id==='modal-revenu') { document.getElementById('rev-date').value=today; calcRevTTC(); }
+  if (id==='modal-charge') { document.getElementById('chg-date').value=today; calcChgTTC(); }
+  if (id==='modal-amort') { document.getElementById('amort-mise').value=today; }
+  if (id==='modal-journal') { document.getElementById('jnl-date').value=today; calcJnlTTC(); onJnlCompteChange(); }
+  if (id==='modal-bien') {
+    editingBienId=null;
+    document.getElementById('modal-bien-title').textContent='Ajouter un bien';
+    ['bien-nom','bien-adresse','bien-surface','bien-prix','bien-loyer'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('bien-date-acq').value='';
+  }
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if(e.target===o) o.classList.remove('open'); }));
+
+function populateBienSelects() {
+  const opts = data.biens.length
+    ? data.biens.map(b=>`<option value="${b.id}">${b.nom}</option>`).join('')
+    : '<option value="">— Aucun bien —</option>';
+  ['rev-bien','chg-bien','amort-bien','jnl-bien'].forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=opts; });
+}
+
+// ==================== BIENS ====================
+function saveBien() {
+  const nom = document.getElementById('bien-nom').value.trim();
+  if (!nom) return alert('Le nom du bien est requis.');
+  const obj = { nom, adresse:gv('bien-adresse'), type:gv('bien-type'), surface:gv('bien-surface'), dateAcq:gv('bien-date-acq'), prix:parseFloat(gv('bien-prix'))||0, loyer:parseFloat(gv('bien-loyer'))||0, statut:gv('bien-statut') };
+  if (editingBienId) { Object.assign(data.biens.find(x=>x.id===editingBienId), obj); }
+  else { data.biens.push({id:uid(),...obj}); }
+  save(); closeModal('modal-bien'); renderBiens();
+}
+function editBien(id) {
+  const b=data.biens.find(x=>x.id===id); if(!b) return;
+  editingBienId=id;
+  document.getElementById('modal-bien-title').textContent='Modifier le bien';
+  document.getElementById('bien-nom').value=b.nom;
+  document.getElementById('bien-adresse').value=b.adresse||'';
+  document.getElementById('bien-type').value=b.type;
+  document.getElementById('bien-surface').value=b.surface||'';
+  document.getElementById('bien-date-acq').value=b.dateAcq||'';
+  document.getElementById('bien-prix').value=b.prix||'';
+  document.getElementById('bien-loyer').value=b.loyer||'';
+  document.getElementById('bien-statut').value=b.statut;
+  document.getElementById('modal-bien').classList.add('open');
+}
+function deleteBien(id) {
+  if(!confirm('Supprimer ce bien ?')) return;
+  data.biens=data.biens.filter(x=>x.id!==id); save(); renderBiens();
+}
+function renderBiens() {
+  const c=document.getElementById('biens-list');
+  if(!data.biens.length){c.innerHTML='<div class="empty"><div class="icon">🏢</div><p>Aucun bien enregistré.</p></div>';return;}
+  c.innerHTML=data.biens.map(b=>{
+    const sb={loué:'badge-green',vacant:'badge-orange',travaux:'badge-red'}[b.statut]||'badge-gray';
+    const revY=data.revenus.filter(r=>r.bienId===b.id&&new Date(r.date).getFullYear()===currentYear).reduce((s,r)=>s+parseFloat(r.ht||0),0);
+    return `<div class="prop-card"><h4>${b.nom}</h4><div class="prop-addr">${b.adresse||'—'}</div>
+    <div class="prop-meta"><span class="badge ${sb}">${b.statut}</span><span class="badge badge-blue">${b.type}</span>${b.surface?`<span class="badge badge-gray">${b.surface} m²</span>`:''}</div>
+    <div style="font-size:.8rem;color:var(--muted);margin-bottom:12px">${b.loyer?`Loyer : <b>${fmt(b.loyer)}/mois</b><br>`:''}${b.dateAcq?`Acq. : ${new Date(b.dateAcq).toLocaleDateString('fr-FR')}<br>`:''} ${b.prix?`Prix : ${fmt(b.prix)}<br>`:''}Revenus ${currentYear} : <b style="color:var(--success)">${fmt(revY)}</b></div>
+    <div class="prop-actions"><button class="btn btn-ghost btn-sm" onclick="editBien('${b.id}')">✏️ Modifier</button><button class="btn btn-danger btn-sm" onclick="deleteBien('${b.id}')">🗑️</button></div></div>`;
+  }).join('');
+}
+
+// ==================== JOURNAL ====================
+function onJnlCompteChange() {
+  const val = gv('jnl-compte');
+  if (!val) return;
+  const [code, classe, cat] = val.split('|');
+  const isCharge = classe === '6';
+  const preview = document.getElementById('jnl-preview');
+  const txt = document.getElementById('jnl-preview-text');
+  preview.style.display = '';
+  txt.innerHTML = isCharge
+    ? `→ Créera une <b style="color:var(--danger)">charge</b> dans la catégorie <b>${cat}</b> (compte ${code})`
+    : `→ Créera un <b style="color:var(--success)">revenu</b> de type <b>${cat}</b> (compte ${code})`;
+}
+
+function calcJnlTTC() {
+  const ht = parseFloat(gv('jnl-montant'))||0;
+  const tva = parseFloat(gv('jnl-tva'))||0;
+  document.getElementById('jnl-ttc').value = fmtNum(ht*(1+tva/100));
+}
+
+function saveJournal() {
+  const date = gv('jnl-date');
+  const bienId = gv('jnl-bien');
+  const compteVal = gv('jnl-compte');
+  const libelle = gv('jnl-libelle').trim();
+  const montant = parseFloat(gv('jnl-montant'));
+  if (!date || !montant || !libelle) return alert('Date, libellé et montant requis.');
+  const [code, classe, cat] = compteVal.split('|');
+  const tva = parseFloat(gv('jnl-tva'))||0;
+  const ttc = parseFloat(gv('jnl-ttc'))||montant;
+  const tiers = gv('jnl-tiers').trim();
+  const ref = gv('jnl-ref').trim();
+
+  // Numéro d'écriture
+  const yearEntries = data.journal.filter(j => new Date(j.date).getFullYear() === new Date(date).getFullYear());
+  const num = yearEntries.length + 1;
+
+  const entry = { id:uid(), num, date, bienId, code, classe, cat, libelle, montant, tva, ttc, tiers, ref };
+  data.journal.push(entry);
+
+  // Auto-création dans revenus ou charges
+  if (classe === '7') {
+    data.revenus.push({ id:uid(), date, bienId, type:cat, locataire:tiers, ht:montant, tva, ttc, note:`[Journal n°${num}] ${ref||libelle}`, fromJournal:true, journalId:entry.id });
+  } else {
+    data.charges.push({ id:uid(), date, bienId, cat, libelle, ht:montant, tva, ttc, note:`[Journal n°${num}] ${ref||libelle}`, fromJournal:true, journalId:entry.id });
+  }
+
+  save(); closeModal('modal-journal');
+  ['jnl-libelle','jnl-montant','jnl-ttc','jnl-tiers','jnl-ref'].forEach(i=>document.getElementById(i).value='');
+  renderJournal();
+}
+
+function deleteJournal(id) {
+  if (!confirm('Supprimer cette écriture ? La ligne correspondante dans Revenus/Charges sera aussi supprimée.')) return;
+  const entry = data.journal.find(j=>j.id===id);
+  if (entry) {
+    data.revenus = data.revenus.filter(r => r.journalId !== id);
+    data.charges = data.charges.filter(c => c.journalId !== id);
+  }
+  data.journal = data.journal.filter(j=>j.id!==id);
+  save(); renderJournal();
+}
+
+function renderJournal() {
+  document.getElementById('journal-year').textContent = currentYear;
+  const items = data.journal.filter(j => new Date(j.date).getFullYear() === currentYear)
+    .sort((a,b) => a.date.localeCompare(b.date));
+  const empty = document.getElementById('journal-empty');
+  const tbody = document.getElementById('journal-body');
+  const tfoot = document.getElementById('journal-foot');
+  const getBien = id => data.biens.find(b=>b.id===id)?.nom || '—';
+
+  if (!items.length) { tbody.innerHTML=''; tfoot.innerHTML=''; empty.style.display=''; return; }
+  empty.style.display='none';
+
+  let totalDebit=0, totalCredit=0;
+  tbody.innerHTML = items.map(j => {
+    const isCharge = j.classe === '6';
+    if (isCharge) totalDebit += j.montant; else totalCredit += j.montant;
+    return `<tr>
+      <td style="color:var(--muted);font-size:.8rem">${String(j.num).padStart(3,'0')}</td>
+      <td>${new Date(j.date).toLocaleDateString('fr-FR')}</td>
+      <td>${getBien(j.bienId)}</td>
+      <td><span class="journal-compte">${j.code}</span></td>
+      <td>${j.libelle}${j.tiers?` <span style="color:var(--muted);font-size:.8rem">– ${j.tiers}</span>`:''}</td>
+      <td class="journal-debit">${isCharge ? fmt(j.montant) : ''}</td>
+      <td class="journal-credit">${!isCharge ? fmt(j.montant) : ''}</td>
+      <td style="color:var(--muted);font-size:.78rem">${j.ref||''}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteJournal('${j.id}')">🗑️</button></td>
+    </tr>`;
+  }).join('');
+
+  tfoot.innerHTML = `<tr>
+    <td colspan="5" style="text-align:right;font-weight:700">TOTAUX</td>
+    <td style="text-align:right;font-weight:700;color:var(--danger)">${fmt(totalDebit)}</td>
+    <td style="text-align:right;font-weight:700;color:var(--success)">${fmt(totalCredit)}</td>
+    <td colspan="2"></td>
+  </tr>`;
+}
+
+// ==================== REVENUS ====================
+function calcRevTTC() {
+  const ht=parseFloat(gv('rev-ht'))||0, tva=parseFloat(gv('rev-tva'))||0;
+  document.getElementById('rev-ttc').value=fmtNum(ht*(1+tva/100));
+}
+function saveRevenu() {
+  const date=gv('rev-date'), ht=parseFloat(gv('rev-ht'));
+  if(!date||!ht) return alert('Date et montant requis.');
+  data.revenus.push({id:uid(),date,bienId:gv('rev-bien'),type:gv('rev-type'),locataire:gv('rev-locataire').trim(),ht,tva:parseFloat(gv('rev-tva'))||0,ttc:parseFloat(gv('rev-ttc'))||ht,note:gv('rev-note').trim()});
+  save(); closeModal('modal-revenu');
+  ['rev-locataire','rev-ht','rev-ttc','rev-note'].forEach(i=>document.getElementById(i).value='');
+  renderRevenus();
+}
+function deleteRevenu(id) {
+  const r = data.revenus.find(x=>x.id===id);
+  if (r?.fromJournal) { alert('Cette ligne est liée à une écriture du journal. Supprimez-la depuis la Saisie comptable.'); return; }
+  if(!confirm('Supprimer ?')) return;
+  data.revenus=data.revenus.filter(x=>x.id!==id); save(); renderRevenus();
+}
+function renderRevenus() {
+  document.getElementById('rev-year').textContent=currentYear;
+  const items=data.revenus.filter(r=>new Date(r.date).getFullYear()===currentYear).sort((a,b)=>a.date.localeCompare(b.date));
+  const tbody=document.getElementById('revenus-body'), empty=document.getElementById('revenus-empty');
+  if(!items.length){tbody.innerHTML='';empty.style.display='';document.getElementById('revenus-total').textContent='';return;}
+  empty.style.display='none';
+  const getBien=id=>data.biens.find(b=>b.id===id)?.nom||'—';
+  const tb={loyer:'badge-green',charges:'badge-blue',depot:'badge-gray',indemnite:'badge-orange',autre:'badge-gray'};
+  tbody.innerHTML=items.map(r=>`<tr>
+    <td>${new Date(r.date).toLocaleDateString('fr-FR')}</td>
+    <td>${getBien(r.bienId)}</td>
+    <td><span class="badge ${tb[r.type]||'badge-gray'}">${r.type}</span>${r.fromJournal?'<span class="tag-journal">Journal</span>':''}</td>
+    <td>${r.locataire||'—'}</td>
+    <td style="text-align:right">${fmt(r.ht)}</td>
+    <td style="text-align:right">${r.tva}%</td>
+    <td style="text-align:right;font-weight:600">${fmt(r.ttc)}</td>
+    <td style="color:var(--muted);font-size:.8rem">${r.note||''}</td>
+    <td><button class="btn btn-danger btn-sm" onclick="deleteRevenu('${r.id}')" ${r.fromJournal?'title="Supprimez depuis le journal"':''}>🗑️</button></td>
+  </tr>`).join('');
+  const total=items.reduce((s,r)=>s+parseFloat(r.ht),0);
+  document.getElementById('revenus-total').textContent=`Total HT : ${fmt(total)}`;
+}
+
+// ==================== CHARGES ====================
+function calcChgTTC() {
+  const ht=parseFloat(gv('chg-ht'))||0, tva=parseFloat(gv('chg-tva'))||0;
+  document.getElementById('chg-ttc').value=fmtNum(ht*(1+tva/100));
+}
+function saveCharge() {
+  const date=gv('chg-date'), ht=parseFloat(gv('chg-ht')), libelle=gv('chg-libelle').trim();
+  if(!date||!ht||!libelle) return alert('Date, libellé et montant requis.');
+  data.charges.push({id:uid(),date,bienId:gv('chg-bien'),cat:gv('chg-cat'),libelle,ht,tva:parseFloat(gv('chg-tva'))||0,ttc:parseFloat(gv('chg-ttc'))||ht,note:gv('chg-note').trim()});
+  save(); closeModal('modal-charge');
+  ['chg-libelle','chg-ht','chg-ttc','chg-note'].forEach(i=>document.getElementById(i).value='');
+  renderCharges();
+}
+function deleteCharge(id) {
+  const c=data.charges.find(x=>x.id===id);
+  if(c?.fromJournal){alert('Cette ligne est liée à une écriture du journal. Supprimez-la depuis la Saisie comptable.');return;}
+  if(c?.fromDAP){alert(`Cette écriture DAP a été générée automatiquement pour ${c.dapYear}. Supprimez-la depuis l'onglet Amortissements (bouton "Annuler DAP ${c.dapYear}").`);return;}
+  if(!confirm('Supprimer ?')) return;
+  data.charges=data.charges.filter(x=>x.id!==id); save(); renderCharges();
+}
+function renderCharges() {
+  document.getElementById('chg-year').textContent=currentYear;
+  const items=data.charges.filter(c=>new Date(c.date).getFullYear()===currentYear).sort((a,b)=>a.date.localeCompare(b.date));
+  const tbody=document.getElementById('charges-body'), empty=document.getElementById('charges-empty');
+  if(!items.length){tbody.innerHTML='';empty.style.display='';document.getElementById('charges-total').textContent='';return;}
+  empty.style.display='none';
+  const getBien=id=>data.biens.find(b=>b.id===id)?.nom||'—';
+  tbody.innerHTML=items.map(c=>`<tr>
+    <td>${new Date(c.date).toLocaleDateString('fr-FR')}</td>
+    <td>${getBien(c.bienId)}</td>
+    <td><span class="badge badge-orange">${c.cat}</span>${c.fromJournal?'<span class="tag-journal">Journal</span>':''}${c.fromDAP?'<span class="tag-journal" style="background:#fef3c7;color:#92400e">DAP Auto</span>':''}</td>
+    <td>${c.libelle}</td>
+    <td style="text-align:right">${fmt(c.ht)}</td>
+    <td style="text-align:right">${c.tva}%</td>
+    <td style="text-align:right;font-weight:600">${fmt(c.ttc)}</td>
+    <td style="color:var(--muted);font-size:.8rem">${c.note||''}</td>
+    <td><button class="btn btn-danger btn-sm" onclick="deleteCharge('${c.id}')" ${c.fromJournal?'title="Supprimez depuis le journal"':''}>🗑️</button></td>
+  </tr>`).join('');
+  const total=items.reduce((s,c)=>s+parseFloat(c.ht),0);
+  document.getElementById('charges-total').innerHTML=`<span style="color:var(--danger)">Total HT charges décaissées : ${fmt(total)}</span>`;
+}
+
+// ==================== AMORTISSEMENTS ====================
+function setAmortDuree() {
+  const sel=document.getElementById('amort-cat');
+  document.getElementById('amort-duree').value=sel.options[sel.selectedIndex].dataset.duree||'';
+}
+function saveAmort() {
+  const designation=gv('amort-designation').trim(), valeur=parseFloat(gv('amort-valeur')), duree=parseInt(gv('amort-duree')), mise=gv('amort-mise');
+  if(!designation||!valeur||!duree||!mise) return alert('Tous les champs obligatoires doivent être remplis.');
+  data.amortissements.push({id:uid(),bienId:gv('amort-bien'),cat:gv('amort-cat'),designation,valeur,duree,mise,note:gv('amort-note').trim()});
+  save(); closeModal('modal-amort'); renderAmort();
+}
+function deleteAmort(id) {
+  if(!confirm('Supprimer cet actif ?')) return;
+  data.amortissements=data.amortissements.filter(x=>x.id!==id); save(); renderAmort();
+}
+function calcAmortAnnuel(a, year) {
+  const sy=new Date(a.mise).getFullYear(), sm=new Date(a.mise).getMonth();
+  if(year<sy||year>=sy+a.duree) return 0;
+  const dot=a.valeur/a.duree;
+  return year===sy ? dot*((12-sm)/12) : dot;
+}
+function calcAmortCumul(a, upToYear) {
+  let t=0; const sy=new Date(a.mise).getFullYear();
+  for(let y=sy;y<=upToYear;y++) t+=calcAmortAnnuel(a,y);
+  return Math.min(t,a.valeur);
+}
+function renderAmort() {
+  document.getElementById('amort-year').textContent=currentYear;
+  const dotYear=data.amortissements.reduce((s,a)=>s+calcAmortAnnuel(a,currentYear),0);
+  document.getElementById('amort-annuel').innerHTML=`<div class="sum-row"><span>Dotations aux amortissements ${currentYear}</span><span style="font-weight:700;color:var(--danger)">${fmt(dotYear)}</span></div>`;
+  const empty=document.getElementById('amort-empty');
+  if(!data.amortissements.length){document.getElementById('amort-body').innerHTML='';empty.style.display='';return;}
+  empty.style.display='none';
+  const getBien=id=>data.biens.find(b=>b.id===id)?.nom||'—';
+  document.getElementById('amort-body').innerHTML=data.amortissements.map(a=>{
+    const dotA=a.valeur/a.duree, cumul=calcAmortCumul(a,currentYear), vnc=Math.max(a.valeur-cumul,0);
+    const pct=Math.min((cumul/a.valeur)*100,100), dotY=calcAmortAnnuel(a,currentYear);
+    return `<tr>
+      <td>${getBien(a.bienId)}</td><td>${a.designation}</td>
+      <td><span class="badge badge-blue">${a.cat}</span></td>
+      <td style="text-align:right">${fmt(a.valeur)}</td><td style="text-align:right">${a.duree} ans</td>
+      <td>${new Date(a.mise).toLocaleDateString('fr-FR')}</td>
+      <td style="text-align:right">${fmt(dotY>0?dotY:dotA)}</td>
+      <td style="min-width:110px"><div style="font-size:.75rem;color:var(--muted)">${fmt(cumul)} / ${fmt(a.valeur)}</div><div class="amort-bar"><div class="amort-bar-fill" style="width:${pct}%"></div></div></td>
+      <td style="text-align:right;font-weight:600;color:${vnc<1?'var(--muted)':'var(--text)'}">${fmt(vnc)}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteAmort('${a.id}')">🗑️</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ==================== BILAN ====================
+
+// Calcule le résultat d'une année donnée à partir des données saisies
+function calcResultatAnnee(year) {
+  const rev  = data.revenus.filter(r=>new Date(r.date).getFullYear()===year).reduce((s,r)=>s+parseFloat(r.ht||0),0);
+  const chgArr = data.charges.filter(c=>new Date(c.date).getFullYear()===year);
+  const chg  = calcTotalChg(chgArr);
+  const amort = calcTotalAmortAll(year);
+  return rev - chg - amort;
+}
+
+// Calcule les résultats antérieurs cumulés (toutes années < currentYear)
+function calcResAnterieurs() {
+  let total = 0;
+  const minYear = Math.min(...[
+    ...data.revenus.map(r=>new Date(r.date).getFullYear()),
+    ...data.charges.map(c=>new Date(c.date).getFullYear()),
+    currentYear
+  ]);
+  for (let y = minYear; y < currentYear; y++) total += calcResultatAnnee(y);
+  return total;
+}
+
+let resAntMode = 'auto'; // 'auto' ou 'manuel'
+
+function toggleResAntMode() {
+  resAntMode = resAntMode === 'auto' ? 'manuel' : 'auto';
+  updateResAntDisplay();
+  updateBilanCalc();
+}
+
+function updateResAntDisplay() {
+  const autoVal = calcResAnterieurs();
+  const label = document.getElementById('b-res-ant-auto-label');
+  const autoSpan = document.getElementById('b-res-ant-auto');
+  const input = document.getElementById('b-res-ant');
+  if (resAntMode === 'auto') {
+    label.textContent = '🔄 Auto — cliquer pour saisie manuelle';
+    autoSpan.style.display = '';
+    autoSpan.textContent = fmt(autoVal);
+    autoSpan.className = autoVal >= 0 ? 'green' : 'red';
+    input.style.display = 'none';
+  } else {
+    label.textContent = '✏️ Manuel — cliquer pour recalcul auto';
+    autoSpan.style.display = 'none';
+    input.style.display = '';
+    if (!input.value) input.value = autoVal.toFixed(2);
+  }
+}
+
+function renderBilan() {
+  document.getElementById('bilan-year').textContent = currentYear;
+  document.getElementById('bilan-year2').textContent = currentYear;
+
+  // Immobilisations
+  const immoBrut = data.amortissements.reduce((s,a)=>s+a.valeur,0);
+  const amortCumul = data.amortissements.reduce((s,a)=>s+calcAmortCumul(a,currentYear),0);
+  const vnc = immoBrut - amortCumul;
+  document.getElementById('b-immo-brut').textContent = fmt(immoBrut);
+  document.getElementById('b-amort-cumul').textContent = fmt(amortCumul);
+  document.getElementById('b-vnc').textContent = fmt(vnc);
+
+  // Résultat de l'exercice N (calculé)
+  const resultat = calcResultatAnnee(currentYear);
+  const resEl = document.getElementById('b-resultat-exo');
+  resEl.textContent = fmt(resultat);
+  resEl.className = resultat >= 0 ? 'green' : 'red';
+
+  // Charger les valeurs sauvegardées (sauf res-ant géré séparément)
+  const bd = data.bilanData[currentYear] || {};
+  const fields = ['b-creances','b-cca','b-banque','b-caisse','b-capital','b-emprunts','b-depots','b-fournisseurs','b-dettes-fisc','b-pca'];
+  fields.forEach(f => { const el=document.getElementById(f); if(el && bd[f]!==undefined) el.value=bd[f]; });
+
+  // Mode résultats antérieurs
+  if (bd._resAntMode) resAntMode = bd._resAntMode;
+  if (bd['b-res-ant'] !== undefined) document.getElementById('b-res-ant').value = bd['b-res-ant'];
+  updateResAntDisplay();
+
+  updateBilanCalc();
+
+  // Comparaison N-1
+  const prevYear = currentYear - 1;
+  const resN1 = calcResultatAnnee(prevYear);
+  const revN1 = data.revenus.filter(r=>new Date(r.date).getFullYear()===prevYear).reduce((s,r)=>s+parseFloat(r.ht||0),0);
+  const chgN1 = data.charges.filter(c=>new Date(c.date).getFullYear()===prevYear).reduce((s,c)=>s+parseFloat(c.ht||0),0);
+  const amortN1 = data.amortissements.reduce((s,a)=>s+calcAmortAnnuel(a,prevYear),0);
+  const compN1El = document.getElementById('bilan-comparaison-n1');
+  if (compN1El) {
+    if (revN1 > 0 || chgN1 > 0) {
+      compN1El.innerHTML = `<div style="font-size:.8rem;color:var(--muted);margin-bottom:6px">Données N-1 (${prevYear}) issues de vos saisies</div>
+        <div class="bilan-row sub"><span>Revenus ${prevYear}</span><span class="green">${fmt(revN1)}</span></div>
+        <div class="bilan-row sub"><span>Charges ${prevYear}</span><span class="red">${fmt(chgN1)}</span></div>
+        <div class="bilan-row sub"><span>Amortissements ${prevYear}</span><span class="red">${fmt(amortN1)}</span></div>
+        <div class="bilan-row sub" style="font-weight:700"><span>Résultat N-1</span><span class="${resN1>=0?'green':'red'}">${fmt(resN1)}</span></div>`;
+    } else {
+      compN1El.innerHTML = `<p style="color:var(--muted);font-size:.8rem">Aucune donnée saisie pour ${prevYear}.</p>`;
+    }
+  }
+
+  // Tableau des immobilisations
+  const getBien=id=>data.biens.find(b=>b.id===id)?.nom||'—';
+  document.getElementById('bilan-immo-body').innerHTML = data.amortissements.map(a=>{
+    const cumul=calcAmortCumul(a,currentYear), vncA=Math.max(a.valeur-cumul,0);
+    return `<tr><td>${getBien(a.bienId)}</td><td>${a.designation}</td><td><span class="badge badge-blue">${a.cat}</span></td>
+      <td style="text-align:right">${fmt(a.valeur)}</td><td style="text-align:right;color:var(--danger)">${fmt(cumul)}</td>
+      <td style="text-align:right;font-weight:600">${fmt(vncA)}</td></tr>`;
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted)">Aucun actif</td></tr>';
+  document.getElementById('bilan-immo-foot').innerHTML = `<tr>
+    <td colspan="3">TOTAL</td><td style="text-align:right">${fmt(immoBrut)}</td>
+    <td style="text-align:right;color:var(--danger)">${fmt(amortCumul)}</td>
+    <td style="text-align:right">${fmt(vnc)}</td></tr>`;
+}
+
+function updateBilanCalc() {
+  const v = id => parseFloat(document.getElementById(id)?.value)||0;
+
+  // ACTIF
+  const immoBrut = data.amortissements.reduce((s,a)=>s+a.valeur,0);
+  const amortCumul = data.amortissements.reduce((s,a)=>s+calcAmortCumul(a,currentYear),0);
+  const vnc = immoBrut - amortCumul;
+  const totalActif = vnc + v('b-creances') + v('b-cca') + v('b-banque') + v('b-caisse');
+
+  // PASSIF — résultats antérieurs selon le mode
+  const resAnt = resAntMode === 'auto' ? calcResAnterieurs() : v('b-res-ant');
+  const resultat = calcResultatAnnee(currentYear);
+  const capPropres = v('b-capital') + resAnt + resultat;
+  const totalPassif = capPropres + v('b-emprunts') + v('b-depots') + v('b-fournisseurs') + v('b-dettes-fisc') + v('b-pca');
+
+  document.getElementById('b-total-actif').textContent = fmt(totalActif);
+  document.getElementById('b-total-passif').textContent = fmt(totalPassif);
+  document.getElementById('b-cap-propres').textContent = fmt(capPropres);
+
+  const diff = Math.abs(totalActif - totalPassif);
+  const eq = document.getElementById('bilan-equilibre');
+  if (diff < 1) {
+    eq.className = 'bilan-check ok';
+    eq.textContent = `✅ Bilan équilibré — Actif = Passif = ${fmt(totalActif)}`;
+  } else {
+    eq.className = 'bilan-check ko';
+    eq.textContent = `⚠️ Déséquilibre : Actif ${fmt(totalActif)} ≠ Passif ${fmt(totalPassif)} — Écart : ${fmt(diff)}`;
+  }
+}
+
+function saveBilanData() {
+  if (!data.bilanData[currentYear]) data.bilanData[currentYear] = {};
+  const fields = ['b-creances','b-cca','b-banque','b-caisse','b-capital','b-emprunts','b-depots','b-fournisseurs','b-dettes-fisc','b-pca'];
+  fields.forEach(f => { const el=document.getElementById(f); if(el) data.bilanData[currentYear][f]=parseFloat(el.value)||0; });
+  data.bilanData[currentYear]._resAntMode = resAntMode;
+  if (resAntMode === 'manuel') {
+    data.bilanData[currentYear]['b-res-ant'] = parseFloat(document.getElementById('b-res-ant').value)||0;
+  }
+  save();
+  const btn = event.target;
+  btn.textContent = '✅ Sauvegardé !';
+  setTimeout(()=>btn.textContent='💾 Sauvegarder les données du bilan', 2000);
+}
+
+// ==================== RESULTAT ====================
+function saveDeficit() {
+  const annee=parseInt(gv('def-annee')), montant=parseFloat(gv('def-montant'));
+  if(!annee||!montant) return alert('Année et montant requis.');
+  data.deficits.push({id:uid(),annee,montant,note:gv('def-note').trim()});
+  save(); closeModal('modal-deficit'); renderResultat();
+}
+function deleteDeficit(id) {
+  if(!confirm('Supprimer ce déficit ?')) return;
+  data.deficits=data.deficits.filter(x=>x.id!==id); save(); renderResultat();
+}
+function renderResultat() {
+  document.getElementById('res-year').textContent=currentYear;
+  const revenus=data.revenus.filter(r=>new Date(r.date).getFullYear()===currentYear);
+  const charges=data.charges.filter(c=>new Date(c.date).getFullYear()===currentYear);
+  const totalRev=revenus.reduce((s,r)=>s+parseFloat(r.ht||0),0);
+  const totalChg=calcTotalChg(charges);
+  const totalAmort=calcTotalAmortAll(currentYear);
+  const totalChargesAll=totalChg+totalAmort;
+  const resultat=totalRev-totalChargesAll;
+  const byType={};
+  revenus.forEach(r=>{byType[r.type]=(byType[r.type]||0)+parseFloat(r.ht||0);});
+  document.getElementById('res-produits').innerHTML=
+    Object.entries(byType).map(([t,v])=>`<div class="sum-row"><span>${t}</span><span class="green">${fmt(v)}</span></div>`).join('')+
+    `<div class="sum-row total"><span>Total revenus</span><span class="green">${fmt(totalRev)}</span></div>`;
+  const byCat={};
+  charges.filter(c=>!c.fromDAP).forEach(c=>{byCat[c.cat]=(byCat[c.cat]||0)+parseFloat(c.ht||0);});
+  const dapImmo = calcTotalDAPImmo(currentYear);
+  const dapSimple = data.amortissements.reduce((s,a)=>s+calcAmortAnnuel(a,currentYear),0);
+  document.getElementById('res-charges-detail').innerHTML=
+    Object.entries(byCat).map(([t,v])=>`<div class="sum-row"><span>${t}</span><span class="red">${fmt(v)}</span></div>`).join('')+
+    `<div class="sum-row"><span>DAP — composants immobilisations</span><span class="red">${fmt(dapImmo)}</span></div>`+
+    `<div class="sum-row"><span>DAP — actifs simples</span><span class="red">${fmt(dapSimple)}</span></div>`+
+    `<div class="sum-row total"><span>Total charges</span><span class="red">${fmt(totalChargesAll)}</span></div>`;
+  const isPos=resultat>=0;
+  document.getElementById('res-final').innerHTML=`
+    <div class="sum-row"><span>Total produits (A)</span><span class="green">${fmt(totalRev)}</span></div>
+    <div class="sum-row"><span>Total charges (B)</span><span class="red">${fmt(totalChargesAll)}</span></div>
+    <div class="result-box ${isPos?'positive':'negative'}">
+      <div class="result-title">${isPos?'Bénéfice fiscal BIC':'Déficit fiscal BIC'}</div>
+      <div class="result-value ${isPos?'green':'red'}">${fmt(Math.abs(resultat))}</div>
+      <div style="font-size:.8rem;margin-top:6px;color:var(--muted)">${isPos?'Ce bénéfice est imposable (IR + prélèvements sociaux).':'Ce déficit est reportable sur vos bénéfices LMNP des 10 prochaines années.'}</div>
+    </div>`;
+  const deficits=data.deficits.filter(d=>d.annee<currentYear).sort((a,b)=>a.annee-b.annee);
+  document.getElementById('res-deficits').innerHTML=deficits.length
+    ? deficits.map(d=>`<div class="sum-row"><span>${d.annee}${d.note?' — '+d.note:''} ${d.annee<=currentYear-10?'<span style="color:var(--danger);font-size:.75rem">(expiré)</span>':''}</span><span style="font-weight:600">${fmt(d.montant)}</span><button class="btn btn-danger btn-sm" onclick="deleteDeficit('${d.id}')">🗑️</button></div>`).join('')
+    : '<p style="color:var(--muted);font-size:.875rem">Aucun déficit antérieur saisi.</p>';
+}
+
+// ==================== DASHBOARD ====================
+function renderDashboard() {
+  document.getElementById('db-year').textContent = currentYear;
+  const revenus=data.revenus.filter(r=>new Date(r.date).getFullYear()===currentYear);
+  const charges=data.charges.filter(c=>new Date(c.date).getFullYear()===currentYear);
+  const totalRev=revenus.reduce((s,r)=>s+parseFloat(r.ht||0),0);
+  const totalChg=calcTotalChg(charges);
+  const totalAmort=calcTotalAmortAll(currentYear);
+  const resultat=totalRev-totalChg-totalAmort;
+  const jCount=data.journal.filter(j=>new Date(j.date).getFullYear()===currentYear).length;
+  const immoCount=(data.immobilisations||[]).length;
+  document.getElementById('db-stats').innerHTML=`
+    <div class="stat-card"><div class="label">Biens LMNP</div><div class="value blue">${data.biens.length}</div><div class="sub">${data.biens.filter(b=>b.statut==='loué').length} loués</div></div>
+    <div class="stat-card"><div class="label">Revenus ${currentYear}</div><div class="value green">${fmt(totalRev)}</div><div class="sub">hors taxes</div></div>
+    <div class="stat-card"><div class="label">Charges décaissées</div><div class="value red">${fmt(totalChg)}</div><div class="sub">hors amortissements</div></div>
+    <div class="stat-card"><div class="label">Amortissements</div><div class="value orange">${fmt(totalAmort)}</div><div class="sub">${immoCount} immo · ${isDAPGenere(currentYear)?'DAP générées':'DAP en attente'}</div></div>
+    <div class="stat-card"><div class="label">Résultat fiscal</div><div class="value ${resultat>=0?'green':'red'}">${fmt(resultat)}</div><div class="sub">${resultat>=0?'Bénéfice':'Déficit'} BIC</div></div>
+    <div class="stat-card"><div class="label">Écritures journal</div><div class="value blue">${jCount}</div><div class="sub">en ${currentYear}</div></div>
+  `;
+  const byCat={};
+  charges.filter(c=>!c.fromDAP).forEach(c=>{byCat[c.cat]=(byCat[c.cat]||0)+parseFloat(c.ht||0);});
+  const total=Object.values(byCat).reduce((s,v)=>s+v,0)+totalAmort;
+  const catColors={'intérêts':'#2563eb','assurance':'#16a34a','gestion':'#d97706','copropriété':'#7c3aed','taxe-foncière':'#dc2626','travaux':'#0891b2','comptable':'#db2777','cfe':'#65a30d','amortissements':'#ea580c'};
+  document.getElementById('charges-breakdown').innerHTML=total>0
+    ?[...Object.entries(byCat),['amortissements',totalAmort]].filter(([,v])=>v>0).map(([cat,val])=>{
+      const pct=(val/total*100).toFixed(1), color=catColors[cat]||'#94a3b8';
+      return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:3px"><span>${cat}</span><span style="font-weight:600">${fmt(val)} (${pct}%)</span></div><div style="height:6px;background:#e2e8f0;border-radius:3px"><div style="width:${pct}%;height:100%;background:${color};border-radius:3px"></div></div></div>`;
+    }).join('')
+    :'<p style="color:var(--muted);font-size:.875rem">Aucune charge enregistrée.</p>';
+  document.getElementById('db-resultat').innerHTML=`
+    <div class="sum-row"><span>Revenus HT</span><span class="green">${fmt(totalRev)}</span></div>
+    <div class="sum-row"><span>Charges décaissées</span><span class="red">− ${fmt(totalChg)}</span></div>
+    <div class="sum-row"><span>Amortissements</span><span class="red">− ${fmt(totalAmort)}</span></div>
+    <div class="sum-row total"><span>Résultat BIC</span><span class="${resultat>=0?'green':'red'}">${fmt(resultat)}</span></div>`;
+  const all=[...revenus.map(r=>({...r,_type:'revenu'})),...charges.filter(c=>!c.fromDAP).map(c=>({...c,_type:'charge'}))].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
+  const getBien=id=>data.biens.find(b=>b.id===id)?.nom||'—';
+  document.getElementById('db-recent').innerHTML=all.length
+    ?`<table style="width:100%;font-size:.875rem"><thead><tr><th>Date</th><th>Bien</th><th>Description</th><th style="text-align:right">Montant</th></tr></thead><tbody>${all.map(e=>`<tr><td>${new Date(e.date).toLocaleDateString('fr-FR')}</td><td>${getBien(e.bienId)}</td><td>${e._type==='revenu'?e.type+(e.locataire?' — '+e.locataire:''):(e.cat+' — '+e.libelle)}${e.fromJournal?'<span class="tag-journal">Journal</span>':''}</td><td style="text-align:right;font-weight:600;color:${e._type==='revenu'?'var(--success)':'var(--danger)'}">${e._type==='revenu'?'+':'−'}${fmt(e.ht)}</td></tr>`).join('')}</tbody></table>`
+    :'<div class="empty"><p>Aucune écriture pour cet exercice.</p></div>';
+}
+
+// ==================== EXPORT ====================
+function renderExport() {
+  renderExportFECSummary();
+  const revenus=data.revenus.filter(r=>new Date(r.date).getFullYear()===currentYear);
+  const charges=data.charges.filter(c=>new Date(c.date).getFullYear()===currentYear);
+  const totalRev=revenus.reduce((s,r)=>s+parseFloat(r.ht||0),0);
+  const totalChg=calcTotalChg(charges);
+  const totalAmort=calcTotalAmortAll(currentYear);
+  const resultat=totalRev-totalChg-totalAmort;
+  const byCat={};
+  charges.filter(c=>!c.fromDAP).forEach(c=>{byCat[c.cat]=(byCat[c.cat]||0)+parseFloat(c.ht||0);});
+  const getBien=id=>data.biens.find(b=>b.id===id)?.nom||'—';
+  document.getElementById('export-body').innerHTML=`
+    <h2 style="text-align:center;margin-bottom:4px">Bilan fiscal simplifié LMNP</h2>
+    <p style="text-align:center;color:var(--muted);margin-bottom:24px">Exercice ${currentYear} — Régime réel simplifié BIC</p>
+    <h3 style="margin-bottom:12px">Biens loués en meublé</h3>
+    <table style="width:100%;margin-bottom:24px"><thead><tr><th>Bien</th><th>Adresse</th><th>Type</th><th>Surface</th><th>Date acq.</th><th>Prix acq.</th><th>Loyer mensuel</th></tr></thead>
+    <tbody>${data.biens.map(b=>`<tr><td>${b.nom}</td><td>${b.adresse||'—'}</td><td>${b.type}</td><td>${b.surface?b.surface+' m²':'—'}</td><td>${b.dateAcq?new Date(b.dateAcq).toLocaleDateString('fr-FR'):'—'}</td><td>${b.prix?fmt(b.prix):'—'}</td><td>${b.loyer?fmt(b.loyer):'—'}</td></tr>`).join('')}</tbody></table>
+    <div class="grid-2" style="margin-bottom:24px">
+      <div>
+        <h3 style="margin-bottom:12px">Compte de résultat ${currentYear}</h3>
+        <div class="sum-row"><span>Loyers et recettes locatives HT</span><span class="green">${fmt(totalRev)}</span></div>
+        <hr style="margin:8px 0">
+        ${Object.entries(byCat).map(([cat,val])=>`<div class="sum-row"><span>— ${cat}</span><span>${fmt(val)}</span></div>`).join('')}
+        <div class="sum-row"><span>— Dotations aux amortissements</span><span>${fmt(totalAmort)}</span></div>
+        <div class="sum-row"><span><b>Total charges</b></span><span class="red"><b>${fmt(totalChg+totalAmort)}</b></span></div>
+        <hr style="margin:8px 0">
+        <div class="sum-row total"><span>Résultat fiscal BIC</span><span class="${resultat>=0?'green':'red'}">${fmt(resultat)}</span></div>
+      </div>
+      <div>
+        <h3 style="margin-bottom:12px">Plan d'amortissement ${currentYear}</h3>
+        ${data.amortissements.length?`<table style="width:100%;font-size:.8rem"><thead><tr><th>Actif</th><th>Valeur</th><th>Durée</th><th>Dot. ${currentYear}</th><th>VNC</th></tr></thead>
+        <tbody>${data.amortissements.map(a=>{const dot=calcAmortAnnuel(a,currentYear),cumul=calcAmortCumul(a,currentYear),vnc=Math.max(a.valeur-cumul,0);return `<tr><td>${a.designation}</td><td>${fmt(a.valeur)}</td><td>${a.duree} ans</td><td>${fmt(dot)}</td><td>${fmt(vnc)}</td></tr>`;}).join('')}</tbody>
+        <tfoot><tr><td colspan="3"><b>Total</b></td><td><b>${fmt(totalAmort)}</b></td><td></td></tr></tfoot></table>`
+        :'<p style="color:var(--muted)">Aucun actif amortissable.</p>'}
+      </div>
+    </div>
+    <h3 style="margin-bottom:12px">Journal des revenus ${currentYear}</h3>
+    <table style="width:100%;margin-bottom:24px;font-size:.85rem"><thead><tr><th>Date</th><th>Bien</th><th>Type</th><th>Locataire</th><th>Montant HT</th><th>Note</th></tr></thead>
+    <tbody>${revenus.map(r=>`<tr><td>${new Date(r.date).toLocaleDateString('fr-FR')}</td><td>${getBien(r.bienId)}</td><td>${r.type}</td><td>${r.locataire||'—'}</td><td style="text-align:right">${fmt(r.ht)}</td><td>${r.note||''}</td></tr>`).join('')}
+    <tr style="font-weight:700"><td colspan="4">TOTAL</td><td style="text-align:right">${fmt(totalRev)}</td><td></td></tr></tbody></table>
+    <h3 style="margin-bottom:12px">Journal des charges ${currentYear}</h3>
+    <table style="width:100%;font-size:.85rem"><thead><tr><th>Date</th><th>Bien</th><th>Catégorie</th><th>Libellé</th><th>Montant HT</th><th>Note</th></tr></thead>
+    <tbody>${charges.map(c=>`<tr><td>${new Date(c.date).toLocaleDateString('fr-FR')}</td><td>${getBien(c.bienId)}</td><td>${c.cat}</td><td>${c.libelle}</td><td style="text-align:right">${fmt(c.ht)}</td><td>${c.note||''}</td></tr>`).join('')}
+    <tr style="font-weight:700"><td colspan="4">TOTAL</td><td style="text-align:right">${fmt(totalChg)}</td><td></td></tr></tbody></table>
+    <div style="margin-top:32px;padding-top:16px;border-top:1px solid var(--border);font-size:.75rem;color:var(--muted);text-align:center">
+      Document généré par LMNP Pro — ${new Date().toLocaleDateString('fr-FR')} — À titre indicatif, consultez votre expert-comptable pour votre déclaration 2031
+    </div>`;
+}
+
+// ==================== FEC ====================
+
+const CAT_TO_COMPTE = {
+  'intérêts':    { num: '6610', lib: 'Charges financières - intérêts demprunt' },
+  'assurance':   { num: '6160', lib: 'Primes dassurance' },
+  'gestion':     { num: '6220', lib: 'Remunérations intermédiaires et honoraires' },
+  'copropriété': { num: '6100', lib: 'Charges locatives et copropriété' },
+  'taxe-foncière':{ num: '6350', lib: 'Impôts et taxes' },
+  'cfe':         { num: '6350', lib: 'CFE - Contribution foncière des entreprises' },
+  'travaux':     { num: '6150', lib: 'Entretien et réparations' },
+  'comptable':   { num: '6226', lib: 'Honoraires comptable CGA' },
+  'électricité': { num: '6063', lib: 'Fournitures - énergie' },
+  'internet':    { num: '6262', lib: 'Frais de télécommunications' },
+  'fournitures': { num: '6060', lib: 'Achats non stockés' },
+  'publicité':   { num: '6230', lib: 'Publicité et annonces' },
+  'déplacement': { num: '6250', lib: 'Frais de déplacements' },
+  'contentieux': { num: '6220', lib: 'Frais contentieux' },
+  'amortissement':{ num: '6811', lib: 'Dotations aux amortissements' },
+  'autre':       { num: '6288', lib: 'Autres charges diverses' },
+};
+
+const TYPE_TO_COMPTE = {
+  'loyer':      { num: '70600', lib: 'Recettes locatives' },
+  'charges':    { num: '70640', lib: 'Charges locatives récupérées' },
+  'depot':      { num: '41900', lib: 'Dépôts de garantie' },
+  'indemnite':  { num: '70600', lib: 'Indemnités locatives' },
+  'subvention': { num: '74000', lib: 'Subventions' },
+  'autre':      { num: '70680', lib: 'Autres produits locatifs' },
+};
+
+function renderExportFECSummary() {
+  const year = currentYear;
+  document.getElementById('fec-year-label').textContent = year;
+  const rev = data.revenus.filter(r => new Date(r.date).getFullYear() === year);
+  const chg = data.charges.filter(c => new Date(c.date).getFullYear() === year && !c.fromDAP);
+  const dap = data.charges.filter(c => new Date(c.date).getFullYear() === year && c.fromDAP);
+  const jnl = data.journal.filter(j => new Date(j.date).getFullYear() === year);
+  const dapImmo = calcTotalDAPImmo(year);
+  const dapSimple = data.amortissements.reduce((s,a) => s + calcAmortAnnuel(a, year), 0);
+  const el = document.getElementById('fec-summary');
+  if (el) el.innerHTML = `
+    &nbsp; Journal REC : <b>${rev.filter(r=>!r.fromJournal).length + jnl.filter(j=>j.classe==='7').length} écritures</b>
+    &nbsp;|&nbsp; Journal ACH : <b>${chg.filter(c=>!c.fromJournal).length + jnl.filter(j=>j.classe==='6').length} écritures</b>
+    &nbsp;|&nbsp; Journal OD (DAP) : <b>${dap.length > 0 ? dap.length : Math.round((dapImmo + dapSimple > 0 ? 1 : 0))} écritures</b>
+    &nbsp;|&nbsp; Total dotations : <b>${fmt(dapImmo + dapSimple)}</b>
+    ${isDAPGenere(year) ? '&nbsp;<span style="color:#15803d">✅ DAP générées</span>' : '&nbsp;<span style="color:#b45309">⏳ DAP calculées auto</span>'}
+  `;
+}
+
+function exportFEC() {
+  const year = currentYear;
+  const siren = (document.getElementById('fec-siren')?.value || 'XXXXXXX').replace(/\D/g, '').padEnd(9,'X').slice(0,9);
+
+  const fmtAmt  = n => Math.abs(Number(n||0)).toFixed(2).replace('.', ',');
+  const fmtDate = s => (s||'').replace(/-/g,'');
+  const esc     = s => (s||'').replace(/\|/g,' ').replace(/\r?\n/g,' ').trim();
+  const getBien = id => data.biens.find(b=>b.id===id)?.nom || '';
+
+  const HEADER = 'JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise';
+  const lines = [HEADER];
+  let num = 1;
+
+  function ligne(jCode, jLib, date, cpteNum, cpteLib, auxNum, auxLib, pieceRef, pieceDate, ecLib, debit, credit) {
+    lines.push([
+      jCode, esc(jLib), num,
+      fmtDate(date), cpteNum, esc(cpteLib),
+      esc(auxNum), esc(auxLib),
+      esc(pieceRef), fmtDate(pieceDate||date),
+      esc(ecLib),
+      fmtAmt(debit), fmtAmt(credit),
+      '', '', fmtDate(date), '', ''
+    ].join('|'));
+  }
+
+  function ecriture(jCode, jLib, date, cpteDebit, libDebit, cpteCredit, libCredit, auxNum, auxLib, pieceRef, ecLib, montant) {
+    ligne(jCode, jLib, date, cpteDebit,  libDebit,  auxNum, auxLib, pieceRef, date, ecLib, montant, 0);
+    ligne(jCode, jLib, date, cpteCredit, libCredit, '',     '',     pieceRef, date, ecLib, 0, montant);
+    num++;
+  }
+
+  // ── 1. Écritures du journal comptable (saisie comptable) ──
+  data.journal.filter(j => new Date(j.date).getFullYear() === year).forEach(j => {
+    const ref = j.ref || `JNL-${String(num).padStart(5,'0')}`;
+    const lib = j.libelle + (j.tiers ? ` — ${j.tiers}` : '');
+    if (j.classe === '7') {
+      // Produit : D 411 / C compte produit
+      ecriture('REC','Journal des recettes', j.date, '41100','Créances locataires', j.code, j.libelle||'Produit locatif', j.tiers||'', j.tiers||'', ref, lib, j.montant);
+    } else {
+      // Charge : D compte charge / C 401
+      ecriture('ACH','Journal des achats', j.date, j.code, j.libelle||'Charge', '40100','Fournisseurs', '', '', ref, lib, j.montant);
+    }
+  });
+
+  // ── 2. Revenus directs (non issus du journal) ──
+  data.revenus.filter(r => new Date(r.date).getFullYear() === year && !r.fromJournal).forEach(r => {
+    const cpt = TYPE_TO_COMPTE[r.type] || { num:'70600', lib:'Recettes locatives' };
+    const ref = `REC-${String(num).padStart(5,'0')}`;
+    const lib = r.note || r.type + (r.locataire ? ` — ${r.locataire}` : '');
+    ecriture('REC','Journal des recettes', r.date, '41100','Créances locataires', cpt.num, cpt.lib, r.locataire||'', r.locataire||'', ref, lib, r.ht);
+  });
+
+  // ── 3. Charges directes décaissées (non journal, non DAP) ──
+  data.charges.filter(c => new Date(c.date).getFullYear() === year && !c.fromJournal && !c.fromDAP).forEach(c => {
+    const cpt = CAT_TO_COMPTE[c.cat] || { num:'62880', lib:'Autres charges diverses' };
+    const ref = `ACH-${String(num).padStart(5,'0')}`;
+    const lib = c.libelle || c.cat;
+    ecriture('ACH','Journal des achats', c.date, cpt.num, cpt.lib, '40100','Fournisseurs', '', '', ref, lib, c.ht);
+  });
+
+  // ── 4. Écritures DAP générées (si présentes dans charges) ──
+  const dapCharges = data.charges.filter(c => new Date(c.date).getFullYear() === year && c.fromDAP);
+  if (dapCharges.length > 0) {
+    dapCharges.forEach(c => {
+      const cpteAmo  = (c.note||'').includes('6812') ? '6812' : '6811';
+      const cpteAmor = cpteAmo === '6812' ? '28120' : '28110';
+      const libAmo   = cpteAmo === '6812' ? 'Dot. amort. mobilier' : 'Dot. amort. immeubles';
+      const libAmor  = cpteAmo === '6812' ? 'Amort. cumul. mobilier' : 'Amort. cumul. immeubles';
+      const ref = `OD-DAP-${String(num).padStart(5,'0')}`;
+      ecriture('OD','Journal des OD', c.date, cpteAmo, libAmo, cpteAmor, libAmor, '', '', ref, c.libelle, c.ht);
+    });
+  } else {
+    // ── 4b. DAP calculées auto (si pas encore générées) ──
+    const dateOD = `${year}-12-31`;
+
+    // Immobilisations par composants
+    (data.immobilisations||[]).forEach(immo => {
+      immo.composants.forEach(comp => {
+        const dap = calcDAPComposant(comp, immo.dateAcquisition, year);
+        if (dap <= 0) return;
+        const cpteAmo  = comp.compte === '6812' ? '6812' : '6811';
+        const cpteAmor = cpteAmo  === '6812' ? '28120' : '28110';
+        const libAmo   = cpteAmo  === '6812' ? 'Dot. amort. mobilier' : 'Dot. amort. immeubles';
+        const libAmor  = cpteAmo  === '6812' ? 'Amort. cumul. mobilier' : 'Amort. cumul. immeubles';
+        const ref = `OD-DAP-${String(num).padStart(5,'0')}`;
+        ecriture('OD','Journal des OD', dateOD, cpteAmo, libAmo, cpteAmor, libAmor, '', '', ref, `DAP ${year} - ${comp.nom}`, dap);
+      });
+    });
+
+    // Actifs simples
+    data.amortissements.forEach(a => {
+      const dap = calcAmortAnnuel(a, year);
+      if (dap <= 0) return;
+      const ref = `OD-DAP-${String(num).padStart(5,'0')}`;
+      ecriture('OD','Journal des OD', dateOD, '6811','Dot. amort. immeubles', '28110','Amort. cumul. immeubles', '', '', ref, `DAP ${year} - ${a.designation}`, dap);
+    });
+  }
+
+  // ── Génération du fichier ──
+  const totalLines = lines.length - 1; // hors header
+  const content = lines.join('\r\n');
+  const blob = new Blob(['﻿' + content], { type: 'text/plain;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `${siren}FEC${year}1231.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  // Confirmation
+  alert(`✅ FEC ${year} exporté\n${totalLines} lignes (${Math.floor(totalLines/2)} écritures)\nFichier : ${siren}FEC${year}1231.txt`);
+}
+
+// ==================== IMPORT / EXPORT ====================
+function exportJSON() {
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download=`lmnp-${currentYear}.json`; a.click(); URL.revokeObjectURL(url);
+}
+function importJSON(event) {
+  const file=event.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try {
+      const imported=JSON.parse(e.target.result);
+      if(confirm('Remplacer toutes les données actuelles par les données importées ?')){
+        data={biens:[],revenus:[],charges:[],amortissements:[],deficits:[],journal:[],bilanData:{},...imported};
+        save(); refreshAll(); alert('Données importées avec succès.');
+      }
+    } catch { alert('Fichier invalide.'); }
+  };
+  reader.readAsText(file); event.target.value='';
+}
+
+// ==================== IMMOBILISATIONS PAR COMPOSANTS ====================
+
+const TEMPLATES_COMPOSANTS = {
+  appartement: {
+    label: 'Appartement meublé',
+    composants: [
+      { nom: 'Terrain (non amortissable)', pct: 15, duree: 0,  compte: '' },
+      { nom: 'Gros œuvre / Structure',     pct: 40, duree: 50, compte: '6811' },
+      { nom: 'Toiture',                    pct: 10, duree: 25, compte: '6811' },
+      { nom: 'Façade / Ravalement',        pct:  5, duree: 15, compte: '6811' },
+      { nom: 'Installations techniques',   pct: 10, duree: 15, compte: '6811' },
+      { nom: 'Agencements intérieurs',     pct: 10, duree: 10, compte: '6811' },
+      { nom: 'Mobilier / literie',         pct:  7, duree:  7, compte: '6812' },
+      { nom: 'Électroménager',             pct:  3, duree:  5, compte: '6812' },
+    ]
+  },
+  maison: {
+    label: 'Maison meublée',
+    composants: [
+      { nom: 'Terrain (non amortissable)', pct: 20, duree: 0,  compte: '' },
+      { nom: 'Gros œuvre / Structure',     pct: 35, duree: 50, compte: '6811' },
+      { nom: 'Toiture',                    pct: 12, duree: 25, compte: '6811' },
+      { nom: 'Menuiseries extérieures',    pct:  8, duree: 20, compte: '6811' },
+      { nom: 'Installations techniques',   pct: 10, duree: 15, compte: '6811' },
+      { nom: 'Agencements intérieurs',     pct:  7, duree: 10, compte: '6811' },
+      { nom: 'Mobilier / literie',         pct:  5, duree:  7, compte: '6812' },
+      { nom: 'Électroménager',             pct:  3, duree:  5, compte: '6812' },
+    ]
+  },
+  parking: {
+    label: 'Parking / Box',
+    composants: [
+      { nom: 'Terrain (non amortissable)', pct: 30, duree: 0,  compte: '' },
+      { nom: 'Gros œuvre / Structure',     pct: 55, duree: 40, compte: '6811' },
+      { nom: 'Portails / Accès',           pct: 10, duree: 15, compte: '6811' },
+      { nom: 'Installations électriques',  pct:  5, duree: 15, compte: '6811' },
+    ]
+  },
+  studio: {
+    label: 'Studio',
+    composants: [
+      { nom: 'Terrain (non amortissable)', pct: 15, duree: 0,  compte: '' },
+      { nom: 'Gros œuvre / Structure',     pct: 42, duree: 50, compte: '6811' },
+      { nom: 'Toiture',                    pct:  8, duree: 25, compte: '6811' },
+      { nom: 'Installations techniques',   pct: 12, duree: 15, compte: '6811' },
+      { nom: 'Agencements intérieurs',     pct: 12, duree: 10, compte: '6811' },
+      { nom: 'Mobilier / literie',         pct:  8, duree:  7, compte: '6812' },
+      { nom: 'Électroménager',             pct:  3, duree:  5, compte: '6812' },
+    ]
+  }
+};
+
+let compRowIndex = 0;
+
+function applyTemplate() {
+  const tpl = document.getElementById('immo-template').value;
+  if (!tpl) return;
+  populateBienSelects();
+  document.getElementById('modal-immo').classList.add('open');
+  document.getElementById('immo-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('composants-tbody').innerHTML = '';
+  compRowIndex = 0;
+  if (TEMPLATES_COMPOSANTS[tpl]) {
+    TEMPLATES_COMPOSANTS[tpl].composants.forEach(c => addComposantRow(c.nom, '', c.duree, c.compte, c.pct));
+  }
+  document.getElementById('immo-template').value = '';
+  updateImmoTotal();
+}
+
+function loadPresetComposants() {
+  const tpl = document.getElementById('comp-preset').value;
+  if (!tpl || !TEMPLATES_COMPOSANTS[tpl]) return;
+  if (document.getElementById('composants-tbody').children.length > 0) {
+    if (!confirm('Remplacer les composants actuels par le modèle sélectionné ?')) {
+      document.getElementById('comp-preset').value = ''; return;
+    }
+  }
+  document.getElementById('composants-tbody').innerHTML = '';
+  compRowIndex = 0;
+  const valTot = parseFloat(document.getElementById('immo-valeur-totale').value) || 0;
+  TEMPLATES_COMPOSANTS[tpl].composants.forEach(c => {
+    const valeur = valTot ? (valTot * c.pct / 100).toFixed(2) : '';
+    addComposantRow(c.nom, valeur, c.duree, c.compte, c.pct);
+  });
+  document.getElementById('comp-preset').value = '';
+  updateImmoTotal();
+}
+
+function addComposantRow(nom='', valeur='', duree='', compte='6811', pct='') {
+  const idx = compRowIndex++;
+  const tbody = document.getElementById('composants-tbody');
+  const tr = document.createElement('tr');
+  tr.id = 'comp-row-' + idx;
+  tr.innerHTML = `
+    <td><input class="comp-nom" value="${nom}" placeholder="ex: Gros œuvre" style="width:100%"></td>
+    <td><input class="comp-val" type="number" step="0.01" value="${valeur}" placeholder="0"
+        style="width:100%" oninput="updateImmoTotal()"></td>
+    <td><input class="comp-dur" type="number" value="${duree}" placeholder="0"
+        style="width:64px" title="0 = non amortissable (terrain)"></td>
+    <td>
+      <select class="comp-cpt" style="width:100%">
+        <option value="" ${!compte?'selected':''}>—</option>
+        <option value="6811" ${compte==='6811'?'selected':''}>6811 Immeuble</option>
+        <option value="6812" ${compte==='6812'?'selected':''}>6812 Mobilier</option>
+        <option value="6813" ${compte==='6813'?'selected':''}>6813 Travaux</option>
+      </select>
+    </td>
+    <td id="comp-dot-${idx}" style="text-align:right;color:var(--muted);font-size:.8rem">—</td>
+    <td id="comp-pct-${idx}" style="text-align:right;color:var(--muted);font-size:.8rem">${pct?pct+'%':''}</td>
+    <td><button class="btn btn-danger btn-sm" onclick="removeComposantRow('comp-row-${idx}')">×</button></td>
+  `;
+  tbody.appendChild(tr);
+  updateImmoTotal();
+}
+
+function removeComposantRow(id) {
+  document.getElementById(id)?.remove();
+  updateImmoTotal();
+}
+
+function updateImmoTotal() {
+  const valTot = parseFloat(document.getElementById('immo-valeur-totale')?.value) || 0;
+  let sumComp = 0;
+  document.querySelectorAll('#composants-tbody tr').forEach((tr, i) => {
+    const val = parseFloat(tr.querySelector('.comp-val')?.value) || 0;
+    const dur = parseInt(tr.querySelector('.comp-dur')?.value) || 0;
+    const idx = tr.id.replace('comp-row-', '');
+    sumComp += val;
+    // update dotation preview
+    const dotEl = document.getElementById('comp-dot-' + idx);
+    const pctEl = document.getElementById('comp-pct-' + idx);
+    if (dotEl) dotEl.textContent = (dur > 0 && val > 0) ? fmt(val / dur) + '/an' : '—';
+    if (pctEl && valTot > 0) pctEl.textContent = (val / valTot * 100).toFixed(1) + '%';
+  });
+  const totalEl = document.getElementById('comp-total-val');
+  const diffEl = document.getElementById('comp-total-diff');
+  if (totalEl) totalEl.textContent = fmt(sumComp);
+  if (diffEl) {
+    const diff = sumComp - valTot;
+    if (valTot === 0) { diffEl.textContent = ''; return; }
+    if (Math.abs(diff) < 0.01) {
+      diffEl.innerHTML = '<span class="ok">✅ Équilibré</span>';
+    } else if (diff > 0) {
+      diffEl.innerHTML = `<span class="over">⚠️ Excédent : +${fmt(diff)}</span>`;
+    } else {
+      diffEl.innerHTML = `<span style="color:var(--warning);font-weight:700">⚠️ Manquant : ${fmt(diff)}</span>`;
+    }
+  }
+}
+
+function saveImmobilisation() {
+  const bienId = gv('immo-bien');
+  const nom = document.getElementById('immo-nom').value.trim();
+  const dateAcquisition = gv('immo-date');
+  const valeurTotale = parseFloat(gv('immo-valeur-totale')) || 0;
+  if (!nom || !dateAcquisition || !valeurTotale) return alert('Désignation, date et valeur totale requis.');
+
+  const rows = document.querySelectorAll('#composants-tbody tr');
+  if (rows.length === 0) return alert('Ajoutez au moins un composant.');
+  const composants = [];
+  rows.forEach(tr => {
+    const n = tr.querySelector('.comp-nom')?.value.trim();
+    const v = parseFloat(tr.querySelector('.comp-val')?.value) || 0;
+    const d = parseInt(tr.querySelector('.comp-dur')?.value) || 0;
+    const c = tr.querySelector('.comp-cpt')?.value || '';
+    if (n) composants.push({ id: uid(), nom: n, valeur: v, duree: d, compte: c });
+  });
+  if (composants.length === 0) return alert('Aucun composant valide.');
+
+  data.immobilisations = data.immobilisations || [];
+  data.immobilisations.push({ id: uid(), bienId, nom, dateAcquisition, valeurTotale, composants });
+  save();
+  closeModal('modal-immo');
+  document.getElementById('composants-tbody').innerHTML = '';
+  document.getElementById('immo-nom').value = '';
+  document.getElementById('immo-valeur-totale').value = '';
+  renderAmort();
+}
+
+function deleteImmobilisation(id) {
+  if (!confirm('Supprimer cette immobilisation et tous ses composants ? Les écritures DAP déjà générées ne seront pas supprimées.')) return;
+  data.immobilisations = data.immobilisations.filter(x => x.id !== id);
+  // Nettoyer dapGeneres
+  if (data.dapGeneres) {
+    Object.keys(data.dapGeneres).forEach(y => { delete data.dapGeneres[y][id]; });
+  }
+  save(); renderAmort();
+}
+
+// ---- Calculs DAP composants ----
+function calcDAPComposant(comp, dateAcquisition, year) {
+  if (!comp.duree || comp.duree === 0 || !comp.valeur) return 0;
+  const startYear = new Date(dateAcquisition).getFullYear();
+  const startMonth = new Date(dateAcquisition).getMonth(); // 0-indexed
+  if (year < startYear || year >= startYear + comp.duree) return 0;
+  const dotAnnuelle = comp.valeur / comp.duree;
+  if (year === startYear) return dotAnnuelle * ((12 - startMonth) / 12);
+  return dotAnnuelle;
+}
+
+function calcDAPCumulComposant(comp, dateAcquisition, upToYear) {
+  let total = 0;
+  const sy = new Date(dateAcquisition).getFullYear();
+  for (let y = sy; y <= upToYear; y++) total += calcDAPComposant(comp, dateAcquisition, y);
+  return Math.min(total, comp.valeur);
+}
+
+function calcTotalDAPImmo(year) {
+  return (data.immobilisations || []).reduce((s, immo) =>
+    s + (immo.composants || []).reduce((cs, comp) =>
+      cs + calcDAPComposant(comp, immo.dateAcquisition, year), 0), 0);
+}
+
+// totalAmort = simples + composants (toujours calculé, indépendant des écritures générées)
+function calcTotalAmortAll(year) {
+  const simple = data.amortissements.reduce((s, a) => s + calcAmortAnnuel(a, year), 0);
+  const compo  = calcTotalDAPImmo(year);
+  return simple + compo;
+}
+
+// totalChg exclut les écritures DAP (déjà comptées dans totalAmort)
+function calcTotalChg(chargesArr) {
+  return chargesArr.filter(c => !c.fromDAP).reduce((s, c) => s + parseFloat(c.ht || 0), 0);
+}
+
+// ---- Génération des écritures DAP ----
+function genererDAP(year) {
+  data.dapGeneres = data.dapGeneres || {};
+  data.dapGeneres[year] = data.dapGeneres[year] || {};
+
+  let count = 0;
+  (data.immobilisations || []).forEach(immo => {
+    if (data.dapGeneres[year][immo.id]) return; // déjà généré pour ce bien
+    const ids = [];
+    immo.composants.forEach(comp => {
+      const dap = calcDAPComposant(comp, immo.dateAcquisition, year);
+      if (dap <= 0 || !comp.duree) return;
+      const chargeId = uid();
+      data.charges.push({
+        id: chargeId,
+        date: `${year}-12-31`,
+        bienId: immo.bienId,
+        cat: 'amortissement',
+        libelle: `DAP ${year} — ${comp.nom}`,
+        ht: parseFloat(dap.toFixed(2)),
+        tva: 0,
+        ttc: parseFloat(dap.toFixed(2)),
+        note: `[DAP auto] ${immo.nom} · Compte ${comp.compte||'6811'} · ${comp.duree} ans`,
+        fromDAP: true,
+        dapYear: year,
+        immoId: immo.id,
+        composantId: comp.id
+      });
+      ids.push(chargeId);
+      count++;
+    });
+    if (ids.length) data.dapGeneres[year][immo.id] = ids;
+  });
+
+  // Actifs simples
+  data.amortissements.forEach(a => {
+    const key = 'simple_' + a.id;
+    if (data.dapGeneres[year][key]) return;
+    const dap = calcAmortAnnuel(a, year);
+    if (dap <= 0) return;
+    const chargeId = uid();
+    data.charges.push({
+      id: chargeId,
+      date: `${year}-12-31`,
+      bienId: a.bienId,
+      cat: 'amortissement',
+      libelle: `DAP ${year} — ${a.designation}`,
+      ht: parseFloat(dap.toFixed(2)),
+      tva: 0, ttc: parseFloat(dap.toFixed(2)),
+      note: `[DAP auto] ${a.cat} · ${a.duree} ans`,
+      fromDAP: true, dapYear: year,
+      simpleAmortId: a.id
+    });
+    data.dapGeneres[year][key] = [chargeId];
+    count++;
+  });
+
+  save();
+  alert(`✅ ${count} écriture(s) DAP générée(s) pour ${year} et reportées dans l'onglet Charges.`);
+  renderAmort();
+}
+
+function supprimerDAP(year) {
+  if (!confirm(`Supprimer toutes les écritures DAP générées pour ${year} ?`)) return;
+  data.charges = data.charges.filter(c => !(c.fromDAP && c.dapYear === year));
+  if (data.dapGeneres) delete data.dapGeneres[year];
+  save(); renderAmort();
+}
+
+function isDAPGenere(year) {
+  return data.dapGeneres && data.dapGeneres[year] && Object.keys(data.dapGeneres[year]).length > 0;
+}
+
+// ---- Render amortissements ----
+function renderAmort() {
+  const year = currentYear;
+  document.getElementById('amort-year').textContent = year;
+  document.getElementById('amort-year2').textContent = year;
+  document.getElementById('amort-year3').textContent = year;
+
+  const getBien = id => data.biens.find(b => b.id === id)?.nom || '—';
+  const immos = data.immobilisations || [];
+
+  // --- Bande DAP ---
+  const totalDAPImmo = calcTotalDAPImmo(year);
+  const totalDAPSimple = data.amortissements.reduce((s, a) => s + calcAmortAnnuel(a, year), 0);
+  const totalDAPAll = totalDAPImmo + totalDAPSimple;
+  const dapDone = isDAPGenere(year);
+  const stripContainer = document.getElementById('dap-strip-container');
+  if (totalDAPAll > 0 || immos.length > 0) {
+    stripContainer.innerHTML = `
+      <div class="dap-strip ${dapDone ? 'dap-generated' : ''}">
+        <div class="dap-info">
+          <strong>${dapDone ? '✅ Écritures DAP ' + year + ' générées' : '⏳ Écritures DAP ' + year + ' non générées'}</strong>
+          <span>Dotation totale ${year} : <b>${fmt(totalDAPAll)}</b>
+            (composants : ${fmt(totalDAPImmo)} + actifs simples : ${fmt(totalDAPSimple)})</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${!dapDone
+            ? `<button class="btn btn-success" onclick="genererDAP(${year})">⚡ Générer les écritures DAP ${year}</button>`
+            : `<button class="btn btn-ghost btn-sm" onclick="supprimerDAP(${year})">🗑️ Annuler DAP ${year}</button>`}
+        </div>
+      </div>`;
+  } else {
+    stripContainer.innerHTML = '';
+  }
+
+  // --- Immobilisations par composants ---
+  const listEl = document.getElementById('immos-list');
+  const emptyEl = document.getElementById('immos-empty');
+  if (!immos.length) { listEl.innerHTML = ''; emptyEl.style.display = ''; }
+  else {
+    emptyEl.style.display = 'none';
+    listEl.innerHTML = immos.map(immo => {
+      const totalBrut = immo.composants.reduce((s, c) => s + c.valeur, 0);
+      const totalCumul = immo.composants.reduce((s, c) => s + calcDAPCumulComposant(c, immo.dateAcquisition, year), 0);
+      const totalVNC = Math.max(totalBrut - totalCumul, 0);
+      const totalDAPAn = immo.composants.reduce((s, c) => s + calcDAPComposant(c, immo.dateAcquisition, year), 0);
+      const pctAmort = totalBrut > 0 ? Math.min(totalCumul / totalBrut * 100, 100) : 0;
+
+      const rows = immo.composants.map(comp => {
+        const dap = calcDAPComposant(comp, immo.dateAcquisition, year);
+        const cumul = calcDAPCumulComposant(comp, immo.dateAcquisition, year);
+        const vnc = Math.max(comp.valeur - cumul, 0);
+        const pct = comp.valeur > 0 ? Math.min(cumul / comp.valeur * 100, 100) : 0;
+        const isNA = !comp.duree || comp.duree === 0;
+        return `<tr class="${isNA ? 'terrain' : ''}">
+          <td>${comp.nom}${isNA ? ' <span class="badge badge-gray" style="font-size:.65rem">Non amortissable</span>' : ''}</td>
+          <td style="text-align:right">${fmt(comp.valeur)}</td>
+          <td style="text-align:right">${isNA ? '—' : comp.duree + ' ans'}</td>
+          <td><span class="journal-compte" style="font-size:.75rem">${comp.compte||'—'}</span></td>
+          <td style="text-align:right;color:var(--warning);font-weight:600">${isNA ? '—' : fmt(comp.valeur / comp.duree)}</td>
+          <td style="text-align:right;color:var(--danger);font-weight:600">${isNA ? '—' : fmt(dap)}</td>
+          <td style="text-align:right;color:var(--muted)">${isNA ? '—' : fmt(cumul)}</td>
+          <td style="text-align:right;font-weight:600">${isNA ? fmt(comp.valeur) : fmt(vnc)}</td>
+          <td style="min-width:90px">${isNA ? '' : `<div class="amort-bar"><div class="amort-bar-fill" style="width:${pct.toFixed(1)}%"></div></div><div style="font-size:.68rem;color:var(--muted)">${pct.toFixed(0)}%</div>`}</td>
+        </tr>`;
+      }).join('');
+
+      return `<div class="immo-card">
+        <div class="immo-card-header">
+          <div>
+            <h4>${immo.nom}</h4>
+            <div class="immo-meta">
+              ${getBien(immo.bienId)} · Acq. ${new Date(immo.dateAcquisition).toLocaleDateString('fr-FR')}
+              · Valeur : ${fmt(immo.valeurTotale)}
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="text-align:right">
+              <div style="font-size:.75rem;color:#94a3b8">DAP ${year}</div>
+              <div style="font-size:1.1rem;font-weight:700;color:#fbbf24">${fmt(totalDAPAn)}</div>
+              <div style="font-size:.7rem;color:#94a3b8">VNC : ${fmt(totalVNC)}</div>
+            </div>
+            <div style="min-width:80px">
+              <div class="amort-bar" style="background:#475569">
+                <div class="amort-bar-fill" style="width:${pctAmort.toFixed(1)}%;background:#fbbf24"></div>
+              </div>
+              <div style="font-size:.68rem;color:#94a3b8;margin-top:2px">${pctAmort.toFixed(0)}% amorti</div>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="deleteImmobilisation('${immo.id}')">🗑️</button>
+          </div>
+        </div>
+        <div class="immo-card-body">
+          <table class="comp-table">
+            <thead><tr>
+              <th>Composant</th>
+              <th style="text-align:right">Valeur brute</th>
+              <th style="text-align:right">Durée</th>
+              <th>Compte</th>
+              <th style="text-align:right">Dot. annuelle</th>
+              <th style="text-align:right">DAP ${year}</th>
+              <th style="text-align:right">Amorti cumulé</th>
+              <th style="text-align:right">VNC</th>
+              <th>Avancement</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+            <tfoot><tr class="total-row">
+              <td>TOTAL</td>
+              <td style="text-align:right">${fmt(totalBrut)}</td>
+              <td></td><td></td>
+              <td style="text-align:right;color:var(--warning)">${fmt(immo.composants.reduce((s,c)=>s+(c.duree&&c.valeur?c.valeur/c.duree:0),0))}</td>
+              <td style="text-align:right;color:var(--danger)">${fmt(totalDAPAn)}</td>
+              <td style="text-align:right;color:var(--muted)">${fmt(totalCumul)}</td>
+              <td style="text-align:right">${fmt(totalVNC)}</td>
+              <td></td>
+            </tfoot>
+          </table>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // --- Actifs simples ---
+  const emptySimple = document.getElementById('amort-empty');
+  if (!data.amortissements.length) { document.getElementById('amort-body').innerHTML = ''; emptySimple.style.display = ''; }
+  else {
+    emptySimple.style.display = 'none';
+    document.getElementById('amort-body').innerHTML = data.amortissements.map(a => {
+      const dotA = a.valeur / a.duree;
+      const cumul = calcAmortCumul(a, year);
+      const vnc = Math.max(a.valeur - cumul, 0);
+      const pct = Math.min((cumul / a.valeur) * 100, 100);
+      const dotY = calcAmortAnnuel(a, year);
+      return `<tr>
+        <td>${getBien(a.bienId)}</td><td>${a.designation}</td>
+        <td><span class="badge badge-blue">${a.cat}</span></td>
+        <td style="text-align:right">${fmt(a.valeur)}</td>
+        <td style="text-align:right">${a.duree} ans</td>
+        <td>${new Date(a.mise).toLocaleDateString('fr-FR')}</td>
+        <td style="text-align:right;font-weight:600;color:var(--danger)">${fmt(dotY > 0 ? dotY : dotA)}</td>
+        <td style="min-width:110px">
+          <div style="font-size:.75rem;color:var(--muted)">${fmt(cumul)} / ${fmt(a.valeur)}</div>
+          <div class="amort-bar"><div class="amort-bar-fill" style="width:${pct.toFixed(1)}%"></div></div>
+        </td>
+        <td style="text-align:right;font-weight:600;color:${vnc<1?'var(--muted)':'var(--text)'}">${fmt(vnc)}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteAmort('${a.id}')">🗑️</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // --- Synthèse ---
+  document.getElementById('amort-synthese').innerHTML = `
+    <div class="sum-row"><span>DAP composants ${year}</span><span style="color:var(--danger);font-weight:600">${fmt(totalDAPImmo)}</span></div>
+    <div class="sum-row"><span>DAP actifs simples ${year}</span><span style="color:var(--danger);font-weight:600">${fmt(totalDAPSimple)}</span></div>
+    <div class="sum-row total"><span>Total dotations aux amortissements ${year}</span><span style="color:var(--danger)">${fmt(totalDAPAll)}</span></div>
+    <div style="margin-top:12px;padding:10px 14px;background:${dapDone?'#f0fdf4':'#fffbeb'};border-radius:8px;font-size:.82rem;color:var(--muted)">
+      ${dapDone
+        ? `✅ Écritures DAP ${year} générées — retrouvez-les dans l'onglet <b>Charges</b> (catégorie : amortissement)`
+        : `⏳ Cliquez sur <b>Générer les écritures DAP ${year}</b> pour créer les écritures comptables automatiquement dans le journal.`}
+    </div>`;
+}
+
+// ==================== INIT ====================
+loadClients();
+renderClientSelector();
+// L'app principale reste cachée jusqu'à sélection d'un dossier
+// (le client-selector est visible par défaut via CSS, sans classe .hidden)
+</script>
+</body>
+</html>
